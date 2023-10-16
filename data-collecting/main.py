@@ -1,67 +1,49 @@
 def main():
-    import json
+    import csv
 
     from libs import mycrawler
-    from libs import database
+    from libs import mydatabase_connector
     from config import settings
 
     # get visited urls
-    with open('coepj/config/visited_urls.txt') as f:
-        visited_urls_str = f.read()
-        # str to list
-        visited_urls = visited_urls_str.split(',')
+    visited_urls = mydatabase_connector.get_visited_urls()
+    
     # prepare start url and get target urls
-    start_url = settings.RESULT_URL
-    target_urls = mycrawler.crawl_start_link(start_url)
-    # make this time links list
-    this_time_urls = []
+    result_url = settings.RESULT_URL
+    result_urls = mycrawler.get_result_urls(result_url)
+    
+    # make this time urls list
+    never_visit_urls = list(set(result_urls)-set(visited_urls))
+    # filered list
+    target_urls = sorted(list(filter(lambda s: "2023" not in s , never_visit_urls)))
+    
+    
     # crawl target url
     for url in target_urls:
         print(url)
 
-        # if ("2021" in url) or ("2022" in url):
-        #     continue
-        # if "2022" in url:
-        #     detail_crawler = mycrawler.Crawler(url)
-        #     # crawl
-        #     detail_crawler.crawl()
-        #     print()
-        #     continue
-        # else:
-        #     continue
+        # generate instance
+        detail_crawler = mycrawler.Crawler(url)
+        # crawl
+        detail_crawler.crawl()
 
-        # not visited
-        if url not in visited_urls:
-            # generate instance
-            detail_crawler = mycrawler.Crawler(url)
-            # crawl
-            detail_crawler.crawl()
+        # save data as csv file
+        file_name = detail_crawler.page_info['program'].lower().replace(' ', '-')
+        
+        with open('data-collecting/data/tmp.csv', 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(detail_crawler.export_result_as_list())
 
-            # check whether extraction went well
-            # confirmation = input("")
-            # if confirmation.lower() == "y":
-            #     # continue to process
-            #     pass
-            # else:
-            #     break
-            
+        # upload data from local to storage
+        mydatabase_connector.upload_data_to_storage(file_name)
 
-            # save json file at local
-            file_name = detail_crawler.result['program'].lower().replace(
-                ' ', '-')
-            with open(f'coepj/results/{file_name}.json', 'w', encoding='utf-8') as f:
-                json.dump(detail_crawler.result, f, ensure_ascii=False)
+        # upload data from storage to bigquery
+        # mydatabase_connector.upload_data_to_bigquery(file_name)
 
-            # upload data from local to storage
-            database.upload_data_to_storage(file_name)
-
-            # upload data from storage to bigquery
-            database.upload_data_to_bigquery(file_name)
-
-            # mark url as visited
-            this_time_urls.append(url)
-            with open('coepj/config/visited_urls.txt', mode='w') as f:
-                f.write(f",{url}")
+        # mark url as visited
+        # this_time_urls.append(url)
+        # with open('coepj/config/visited_urls.txt', mode='w') as f:
+        #     f.write(f",{url}")
 
 
 if __name__ == "__main__":

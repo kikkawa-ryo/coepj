@@ -1,29 +1,28 @@
 from bs4 import BeautifulSoup
+from itertools import zip_longest
 import re
 
 
-def extract_links(contents):
+def extract_links(parse_target):
     """HTMLレスポンスの文字列から、必要なContry-Yearのリンクを取得し返す関数
 
     Args:
-        contents (String): HTMLレスポンスの文字列
+        parse_target (String): HTMLレスポンスの文字列
     """
-    soup = BeautifulSoup(contents, 'lxml')
-    # soup -> div str -> ul list
-    ul = soup.find(
-        class_="menu-coe-country-programs-menu-container").select("ul.sub-menu")
-    # ul [] -> a [[]]
+    soup = BeautifulSoup(parse_target, 'lxml')
+    # 1.soup -> div str -> ul list
+    ul = soup.find(class_="menu-coe-country-programs-menu-container").select("ul.sub-menu")
+    # 2.ul [] -> a [[]]
     a = list(map(lambda ul: ul.select("a"), ul))
-    # a [[]] -> a [] -> href []
+    # 3.a [[]] -> a [] -> href []
     links = list(map(lambda a: a.get("href"), sum(a, [])))
     return links
 
 
-def extract_additional_link(contents):
-    soup = BeautifulSoup(contents, 'lxml')
+def check_and_get_additional_url(parse_target):
+    soup = BeautifulSoup(parse_target, 'lxml')
     # coeへのリンクが存在するかどうかのチェック
-    a = soup.select(
-        'div.wprt-container div')[0].find(href=re.compile("https://cupofexcellence.org"))
+    a = soup.select('div.wprt-container div')[0].find(href=re.compile("https://cupofexcellence.org"))
     if a:
         url = a.get('href')
         return url
@@ -43,28 +42,27 @@ def blank_fixer(text):
     return re.sub('\s{2,}', ' ', text).strip()
 
 
-def scrapingPage(contents, result):
-    soup = BeautifulSoup(contents, 'lxml')
-    # サイト上のデータ
-    result['program'] = soup.find('h1').get_text().strip()
-    result['description'] = [{'p': [x.text for x in block.find_all('p')],
-                              'li':[x.text for x in block.find_all('li')]}
-                             for block in soup.select('h1 ~ div > div.mk-text-block')]
-    result['remarks'] = [x.text for x in soup.select(
-        'div.vc_tta-container ~ div p')]
+def scrapingPage(parse_target, content_container, page_info_container):
+    soup = BeautifulSoup(parse_target, 'lxml')
+    # 大会プログラムを説明するようなデータ
+    page_info_container['program'] = soup.find('h1').get_text().strip()
+    page_info_container['description'] = [{'p': [x.text for x in block.find_all('p')],
+                                        'li': [x.text for x in block.find_all('li')]} for block in soup.select('h1 ~ div > div.mk-text-block')]
+    page_info_container['remarks'] = [x.text for x in soup.select('div.vc_tta-container ~ div p')]
 
     # 各テーブル情報の抽出
     panels = soup.find_all('div', attrs={'class': 'vc_tta-panel'})  # テーブルリスト
-    result = extractInfoFromPanels(panels, result)
-    return result
+    content_container, page_info_container = extractInfoFromPanels(panels, content_container, page_info_container)
+    return content_container, page_info_container
 
 
-def extractInfoFromPanels(panels, result):
+def extractInfoFromPanels(panels, content_container, page_info_container):
     """from panels html to dict
 
     Args:
         panels (_type_): _description_
-        result (_type_): _description_
+        content_container (_type_): _description_
+        page_info_container (_type_): _description_
 
     Returns:
         _type_: _description_
@@ -74,20 +72,23 @@ def extractInfoFromPanels(panels, result):
     column_fixer = re.compile('[^a-zA-Z0-9]')
     for panel in panels:
         # panelのタイトル
-        panel_title = panel.find(
-            'span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
+        panel_title = panel.find('span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
         panel_title = column_fixer.sub('_', blank_fixer(panel_title))
         # sponsor
         if 'sponsor' in panel_title.lower():
-            if panel.img.get('src'):
-                result[panel_title] = {'url': panel.img.get('src')}
-            elif panel.ul:
-                result[panel_title] = {
-                    'li': [li.text.strip() for li in panel.find_all('li')]}
+            if (panel.img is None) and (panel.ul is None):
+                content_container[panel_title] = None
+            if panel.img is not None:
+                content_container[panel_title] = {'img':{'url': [img.get('src') for img in panel.find_all('img')]}}
+            if panel.ul is not None:
+                content_container[panel_title] = {'li': [{'text': li.text.strip()
+                                                          , 'url': li.a.get('href') if li.a is not None else None} 
+                                                         for li in panel.find_all('li')]}
+                                                         
         # panelがtableのケース
         elif panel.table:
             # 各パネルの箱と初期値
-            result[panel_title] = []
+            content_container[panel_title] = []
             # 審査員テーブルがあるかどうかのbool, デフォルトはナシ
             group = None  # juryの属性初期値
             bool_jury = False
@@ -119,8 +120,7 @@ def extractInfoFromPanels(panels, result):
                     # 各セルごとの処理
                     for td in tr.find_all('td'):
                         # カラム名取得
-                        column = column_fixer.sub(
-                            '_', blank_fixer(td.get('data-mtr-content')))
+                        column = column_fixer.sub('_', blank_fixer(td.get('data-mtr-content')))
                         # divとして値が設定されている場合
                         if td.get('data-sheets-value'):
                             # textとdivの比較し、同じ場合
@@ -135,20 +135,17 @@ def extractInfoFromPanels(panels, result):
                         if td.a:
                             # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in result['individual_unique_links']:
+                            if individual_url not in page_info_container['individual_unique_links']:
                                 row['url'] = td.a.get('href')
                                 # 未知のURLとして保存
-                                result['individual_unique_links'].add(
-                                    individual_url)
+                                page_info_container['individual_unique_links'].add(individual_url)
                                 # tableごとにURLが存在したかをチェック
-                                result['individual_flag'].add(
-                                    panel_title)
+                                page_info_container['individual_flag'].add(panel_title)
                     # write row
-                    result[panel_title].append(row)
+                    content_container[panel_title].append(row)
             # theadがあるパターン
             elif table.thead:
-                columns = list(map(lambda x: column_fixer.sub(
-                    '_', blank_fixer(x.text)), table.thead.find_all('th')))
+                columns = list(map(lambda x: column_fixer.sub('_', blank_fixer(x.text)), table.thead.find_all('th')))
                 # 審査員テーブルが存在する場合
                 if 'jury' in panel_title.lower():
                     bool_jury = True
@@ -175,49 +172,67 @@ def extractInfoFromPanels(panels, result):
                         if td.a:
                             # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in result['individual_unique_links']:
+                            if individual_url not in page_info_container['individual_unique_links']:
                                 row['url'] = td.a.get('href')
                                 # 未知のURLとして保存
-                                result['individual_unique_links'].add(
-                                    individual_url)
+                                page_info_container['individual_unique_links'].add(individual_url)
                                 # tableごとにURLが存在したかをチェック
-                                result['individual_flag'].add(
-                                    panel_title)
+                                page_info_container['individual_flag'].add(panel_title)
                     # write row
-                    result[panel_title].append(row)
+                    content_container[panel_title].append(row)
 
             # 上記のどちらでもないパターン(2022BrazilAuction)
             else:
+                count=0
+                # 審査員テーブルが存在する場合
+                if 'jury' in panel_title.lower():
+                    bool_jury = True
                 # １行ごとテーブル内容の処理
                 for tr in table.tbody.find_all('tr'):
                     # カラム名が保存されている1行目の処理
-                    if tr.find('td').text.lower() == 'rank':
-                        columns = list(map(lambda x: column_fixer.sub(
-                            '_', blank_fixer(x.text)), tr.find_all('td')))
+                    if count == 0:
+                        columns = list(map(lambda x: column_fixer.sub('_', blank_fixer(x.text)), tr.find_all('td')))
+                        count+=1
                         continue
                     # １行ごとの箱
                     row = {}
+                    # jury処理
+                    if bool_jury:
+                        # jury属性であった場合、属性を更新しスキップする
+                        if tr.th:
+                            group = tr.th.text.strip()
+                            continue
+                        # 既に属性が保存されている場合、属性を格納する
+                        if group:
+                            row['group'] = group
                     # 最終行の処理
                     if last_line_checker.match(tr.find('td').text.lower()):
                         continue
                     # 各セルごとの処理
-                    for column, td in zip(columns, tr.find_all('td')):
+                    if len(columns) != len(tr.find_all('td')):
+                        data=[]
+                        for td in tr.find_all('td'):
+                            if (td.get('colspan') is not None) and (td.get('colspan').isdecimal()):
+                                data.extend([td for i in range(int(td.get('colspan')))])
+                            else:
+                                data.append(td)
+                    else:
+                        data = tr.find_all('td')
+                    for column, td in zip_longest(columns, data):
                         row[column] = td.text.strip()
                         # urlも存在する場合
                         if td.a:
                             # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in result['individual_unique_links']:
+                            if individual_url not in page_info_container['individual_unique_links']:
                                 row['url'] = td.a.get('href')
                                 # 未知のURLとして保存
-                                result['individual_unique_links'].add(
-                                    individual_url)
+                                page_info_container['individual_unique_links'].add(individual_url)
                                 # tableごとにURLが存在したかをチェック
-                                result['individual_flag'].add(
-                                    panel_title)
+                                page_info_container['individual_flag'].add(panel_title)
                     # write row
-                    result[panel_title].append(row)
-    return result
+                    content_container[panel_title].append(row)
+    return content_container, page_info_container
 
 
 def extractInfoFromIndividuals(contents, url):
@@ -225,10 +240,9 @@ def extractInfoFromIndividuals(contents, url):
     soup = BeautifulSoup(contents, 'lxml')
     if ('cupofexcellence.org/directory' in url) or ('allianceforcoffeeexcellence.org/farm-directory' in url):
         # image-links
-        images = list(map(lambda x: x.img.get('srcset'),
-                      soup.select('ul.other-images a')))
+        images_urls_candidate_list = list(map(lambda x: x.img.get('srcset'), soup.select('ul.other-images a')))
         images_result = []
-        for l in [chooseBestLink(x) for x in images]:
+        for l in [chooseBestLink(x) for x in images_urls_candidate_list]:
             images_result.append(l)
         individual_result['images'] = images_result
 
@@ -253,44 +267,63 @@ def extractInfoFromIndividuals(contents, url):
 
     elif 'farmdirectory.cupofexcellence.org/listing' in url:
         # Description
-        individual_result['description'] = {"p": [p.text.strip() for p in soup.find(
-            "h5", text="Description").parent.parent.parent.parent.find_all("p")]}
+        try:
+            individual_result['description'] = {"p": [p.text.strip() for p in soup.find(
+                "h5", text="Description").parent.parent.parent.parent.find_all("p")]}
+        except AttributeError:
+            individual_result['description'] = []
+            print("description", url)
 
         # Gallery
-        individual_result['gallery'] = [a.get("href") for a in soup.find(
-            "h5", text="Gallery").parent.parent.parent.parent.find_all("a")]
+        try:
+            individual_result['gallery'] = [a.get("href") for a in soup.find(
+                "h5", text="Gallery").parent.parent.parent.parent.find_all("a")]
+        except AttributeError:
+            individual_result['gallery'] = []
+            print("gallery", url)
 
         # Farm Information
         individual_result['farm_information'] = {}
-        for li in soup.find("h5", text="Farm Information").parent.parent.parent.parent.find_all("li"):
-            individual_result['farm_information'][li.find(
-                class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
-
+        try:
+            for li in soup.find("h5", text="Farm Information").parent.parent.parent.parent.find_all("li"):
+                individual_result['farm_information'][li.find(
+                    class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
+        except AttributeError:
+            print("farm_information", url)
+            
         # Location
         try:
             individual_result['location'] = soup.find(
                 "h5", text="Location").parent.parent.parent.parent.find("p").text
         except AttributeError:
-            individual_result['location'] = None
+            individual_result['location'] = []
+            print("location", url)
 
         # Score
         individual_result['score'] = {}
-        for li in soup.find("h5", text="Score").parent.parent.parent.parent.find_all("li"):
-            individual_result['score'][li.find(
-                class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
-
+        try:
+            for li in soup.find("h5", text="Score").parent.parent.parent.parent.find_all("li"):
+                individual_result['score'][li.find(
+                    class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
+        except AttributeError:
+            print("score", url)
+            
         # Lot Information
         individual_result['lot_information'] = {}
-        for li in soup.find("h5", text="Lot Information").parent.parent.parent.parent.find_all("li"):
-            individual_result['lot_information'][li.find(
-                class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
-
+        try:
+            for li in soup.find("h5", text="Lot Information").parent.parent.parent.parent.find_all("li"):
+                individual_result['lot_information'][li.find(
+                    class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
+        except AttributeError:
+            print("lot_information", url)
+            
         # Similar Farm
         try:
             individual_result['similar_farm'] = [
                 a.get("href") for a in soup.find(class_="similar-listings").find_all("a")]
         except AttributeError:
-            individual_result['similar_farm'] = None
+            individual_result['similar_farm'] = []
+            print("similar_farm", url)
 
         return individual_result
 

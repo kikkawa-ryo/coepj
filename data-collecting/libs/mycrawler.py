@@ -1,56 +1,63 @@
+import collections
+import csv
+import json
+from dataclasses import dataclass
 import requests
 import time
 
 from libs import myscraper
 
 
-def crawl_start_link(url):
-    response = requests.get(url, headers={
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
+def get_result_urls(url):
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
     url_list = myscraper.extract_links(response.content)
     return url_list
 
 
-def my_requsest_get(url):
+def get_response_by_my_requsest(url):
     time.sleep(2)
-    response = requests.get(url, headers={
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
     return response.content
 
 
 class Crawler:
-    def __init__(self, base_url):
-        self.base_url = base_url
-        self.result = {"base_url": base_url,
-                       "individual_flag": set(),
-                       "individual_unique_links": set()}
-
+    def __init__(self, result_url):
+        self.result_url = result_url
+        self.content = {}
+        self.page_info = {"visited_result_url_list": [result_url], "individual_flag": set(), "individual_unique_links": set()}
+    # @dataclass
+    # class Result:
+    #     result_url: str
+    #     content: dict
+    #     page_info: dict
+        
+    def export_result_as_list(self):
+        return [self.result_url, json.dumps(self.content, ensure_ascii=False), json.dumps(self.page_info, ensure_ascii=False)]
+    
     def crawl(self):
         # URLからコンテンツを取得
-        contents = my_requsest_get(self.base_url)
+        contents = get_response_by_my_requsest(self.result_url)
         # 追加でクローリングするべきURLが存在するかの確認
-        extract_additional_url = myscraper.extract_additional_link(contents)
-        # 全体ページのクローリングとスクレイピング
-        if extract_additional_url:
-            self.result = myscraper.scrapingPage(contents, self.result)
+        additional_url = myscraper.check_and_get_additional_url(contents)
+        # 追加URLが存在すれば、追加URLを含め全体ページのクローリングとスクレイピング
+        if additional_url:
+            # 追加URLをvisitedとして記録
+            self.page_info['visited_result_url_list'].append(additional_url)
+            # Responseの解析後、Result辞書を更新
+            self.content, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.content, page_info_container=self.page_info)
             # 追加のGETリクエストを送信
-            additional_contents = my_requsest_get(extract_additional_url)
-            self.result = myscraper.scrapingPage(
-                additional_contents, self.result)
+            additional_contents = get_response_by_my_requsest(additional_url)
+            self.content, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.content, page_info_container=self.page_info)
         else:
-            self.result = myscraper.scrapingPage(contents, self.result)
+            self.content, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.content, page_info_container=self.page_info)
         # 個別ページのクローリングとスクレイピングをし、結果を更新
-        flag = self.result['individual_flag']
-        if len(flag) > 0:
-            for table_name in list(flag):
-                for i, row in enumerate(self.result[table_name]):
+        individual_column_list = self.page_info['individual_flag']
+        if len(individual_column_list) > 0:
+            for table_name in list(individual_column_list):
+                for i, row in enumerate(self.content[table_name]):
                     row.update({'individual_result': myscraper.extractInfoFromIndividuals(
-                        my_requsest_get(row['url']), row['url'])})
-                    self.result[table_name][i] = row
+                        get_response_by_my_requsest(row['url']), row['url'])})
+                    self.content[table_name][i] = row
         # 最後にセットをリストに変換
-        self.result["individual_flag"] = list(self.result["individual_flag"])
-        self.result["individual_unique_links"] = list(
-            self.result["individual_unique_links"])
-
-    def export(self):
-        return self.result
+        self.page_info["individual_flag"] = list(self.page_info["individual_flag"])
+        self.page_info["individual_unique_links"] = list(self.page_info["individual_unique_links"])

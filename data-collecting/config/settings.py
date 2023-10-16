@@ -1,7 +1,12 @@
+from dotenv import load_dotenv
+import os
+
+# .env ファイルをロードして環境変数へ反映
+load_dotenv()
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
 # データベース接続情報
 BUCKET_NAME = 'coffee_bucket'
-# GOOGLE_APPLICATION_CREDENTIALS = 'coepj/config/coffee-research-5dadd1708eca.json'
-GOOGLE_APPLICATION_CREDENTIALS = 'coepj/config/coffee-research-dc3acff2ab0f.json'
 
 # スクレイピングの設定
 RESULT_URL = "https://allianceforcoffeeexcellence.org/competition-auction-results/"

@@ -2,6 +2,9 @@
 *.vscode
 *.ipynb_checkpoints
 
+.env
+
 __pycache__/
 
 data-collecting/config/credential
+venv/
