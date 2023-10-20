@@ -18,16 +18,18 @@ def extract_links(parse_target):
     links = list(map(lambda a: a.get("href"), sum(a, [])))
     return links
 
-
 def check_and_get_additional_url(parse_target):
     soup = BeautifulSoup(parse_target, 'lxml')
     # coeへのリンクが存在するかどうかのチェック
-    a = soup.select('div.wprt-container div')[0].find(href=re.compile("https://cupofexcellence.org"))
+    a = soup.select('div.wprt-container div')[0].find(href=re.compile('https://cupofexcellence.org(?!.*global-coffee-centers)'))
     if a:
         url = a.get('href')
         return url
     else:
         return None
+    
+def is_validated_url(url):
+    return not bool(re.compile(r'auction.allianceforcoffeeexcellence.org|cdn-cgi').search(url))
 
 
 def blank_fixer(text):
@@ -40,6 +42,21 @@ def blank_fixer(text):
         str: 空白
     """
     return re.sub('\s{2,}', ' ', text).strip()
+
+def chooseBestLink(a):
+    d = re.compile(r'\s\d+w')
+    s = re.compile(r'\s|w')
+    linklist = a.split(',')
+    if len(linklist) == 1:
+        return a
+    resolutions = [int(s.sub('', d.search(l).group()))
+                   for l in linklist]
+    maxindex = resolutions.index(max(resolutions))
+    links = d.sub('', linklist[maxindex].strip())
+    if len(links) == 0:
+        return None
+    else:
+        return links
 
 
 def scrapingPage(parse_target, content_container, page_info_container):
@@ -115,7 +132,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                     if tr.find('td').get('data-mtr-content') == tr.find('td').text:
                         continue
                     # 最終行に特定の条件があればスキップする処理
-                    elif last_line_checker.match(tr.find('td').text.lower()):
+                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
                         continue
                     # 各セルごとの処理
                     for td in tr.find_all('td'):
@@ -133,12 +150,10 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                             row[column] = td.text.strip()
                         # URLが存在する場合
                         if td.a:
-                            # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in page_info_container['individual_unique_links']:
-                                row['url'] = td.a.get('href')
-                                # 未知のURLとして保存
-                                page_info_container['individual_unique_links'].add(individual_url)
+                            # 妥当なURLかどうかの確認
+                            if is_validated_url(individual_url):
+                                row['url'] = individual_url
                                 # tableごとにURLが存在したかをチェック
                                 page_info_container['individual_flag'].add(panel_title)
                     # write row
@@ -163,19 +178,17 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                         if group:
                             row['group'] = group
                     # 最終行の処理
-                    if last_line_checker.match(tr.find('td').text.lower()):
+                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
                         continue
                     # 各セルごとの処理
                     for column, td in zip(columns, tr.find_all('td')):
                         row[column] = td.text.strip()
                         # urlも存在する場合
                         if td.a:
-                            # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in page_info_container['individual_unique_links']:
-                                row['url'] = td.a.get('href')
-                                # 未知のURLとして保存
-                                page_info_container['individual_unique_links'].add(individual_url)
+                            # 妥当なURLかどうかの確認
+                            if is_validated_url(individual_url):
+                                row['url'] = individual_url
                                 # tableごとにURLが存在したかをチェック
                                 page_info_container['individual_flag'].add(panel_title)
                     # write row
@@ -206,7 +219,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                         if group:
                             row['group'] = group
                     # 最終行の処理
-                    if last_line_checker.match(tr.find('td').text.lower()):
+                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
                         continue
                     # 各セルごとの処理
                     if len(columns) != len(tr.find_all('td')):
@@ -222,12 +235,10 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                         row[column] = td.text.strip()
                         # urlも存在する場合
                         if td.a:
-                            # 既に格納したことのあるURLかのチェック
                             individual_url = td.a.get('href')
-                            if individual_url not in page_info_container['individual_unique_links']:
-                                row['url'] = td.a.get('href')
-                                # 未知のURLとして保存
-                                page_info_container['individual_unique_links'].add(individual_url)
+                            # 妥当なURLかどうかの確認
+                            if is_validated_url(individual_url):
+                                row['url'] = individual_url
                                 # tableごとにURLが存在したかをチェック
                                 page_info_container['individual_flag'].add(panel_title)
                     # write row
@@ -238,9 +249,9 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
 def extractInfoFromIndividuals(contents, url):
     individual_result = {}
     soup = BeautifulSoup(contents, 'lxml')
-    if ('cupofexcellence.org/directory' in url) or ('allianceforcoffeeexcellence.org/farm-directory' in url):
+    if ('cupofexcellence.org/directory' in url) or ('allianceforcoffeeexcellence.org/farm-directory' in url) or ('allianceforcoffeeexcellence.org/directory' in url):
         # image-links
-        images_urls_candidate_list = list(map(lambda x: x.img.get('srcset'), soup.select('ul.other-images a')))
+        images_urls_candidate_list = list(map(lambda x: x.img.get('srcset') if x.img.get('srcset') is not None else x.img.get('src'), soup.select('ul.other-images a')))
         images_result = []
         for l in [chooseBestLink(x) for x in images_urls_candidate_list]:
             images_result.append(l)
@@ -249,12 +260,17 @@ def extractInfoFromIndividuals(contents, url):
         # description
         description = soup.select('#listing-description')
         individual_result['description'] = {}
-        individual_result['description']['p'] = [p.text.strip()
-                                                 for p in description[0].find_all('p')]
-        individual_result['description']['tr'] = [tr.text.strip()
-                                                  for tr in description[0].find_all('tr')]
-        individual_result['description']['li'] = [li.text.strip()
-                                                  for li in description[0].find_all('li')]
+        if len(description) == 0:
+            individual_result['description']['p'] = []
+            individual_result['description']['tr'] = []
+            individual_result['description']['li'] = []
+        else:
+            individual_result['description']['p'] = [p.text.strip()
+                                                    for p in description[0].find_all('p')]
+            individual_result['description']['tr'] = [tr.text.strip()
+                                                    for tr in description[0].find_all('tr')]
+            individual_result['description']['li'] = [li.text.strip()
+                                                    for li in description[0].find_all('li')]
 
         # detail
         schema_fixer = re.compile('[^a-zA-Z0-9]')
@@ -267,19 +283,19 @@ def extractInfoFromIndividuals(contents, url):
 
     elif 'farmdirectory.cupofexcellence.org/listing' in url:
         # Description
+        individual_result['description'] = []
         try:
             individual_result['description'] = {"p": [p.text.strip() for p in soup.find(
                 "h5", text="Description").parent.parent.parent.parent.find_all("p")]}
         except AttributeError:
-            individual_result['description'] = []
             print("description", url)
 
         # Gallery
+        individual_result['gallery'] = []
         try:
             individual_result['gallery'] = [a.get("href") for a in soup.find(
                 "h5", text="Gallery").parent.parent.parent.parent.find_all("a")]
         except AttributeError:
-            individual_result['gallery'] = []
             print("gallery", url)
 
         # Farm Information
@@ -292,11 +308,11 @@ def extractInfoFromIndividuals(contents, url):
             print("farm_information", url)
             
         # Location
+        individual_result['location'] = []
         try:
             individual_result['location'] = soup.find(
                 "h5", text="Location").parent.parent.parent.parent.find("p").text
         except AttributeError:
-            individual_result['location'] = []
             print("location", url)
 
         # Score
@@ -326,17 +342,3 @@ def extractInfoFromIndividuals(contents, url):
             print("similar_farm", url)
 
         return individual_result
-
-
-def chooseBestLink(a):
-    d = re.compile(r'\s\d+w')
-    s = re.compile(r'\s|w')
-    linklist = a.split(',')
-    resolutions = [int(s.sub('', d.search(l).group()))
-                   for l in linklist]
-    maxindex = resolutions.index(max(resolutions))
-    links = d.sub('', linklist[maxindex].strip())
-    if len(links) == 0:
-        return None
-    else:
-        return links

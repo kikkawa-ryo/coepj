@@ -9,5 +9,6 @@ __pycache__/
 venv/
 
 data-collecting/config/credential
+data-collecting/data/tmp.csv
 data-collecting/tmp
 data-collecting/results

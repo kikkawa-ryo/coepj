@@ -1,5 +1,6 @@
 def main():
     import csv
+    import re
 
     from libs import mycrawler
     from libs import mydatabase_connector
@@ -15,8 +16,7 @@ def main():
     # make this time urls list
     never_visit_urls = list(set(result_urls)-set(visited_urls))
     # filered list
-    target_urls = sorted(list(filter(lambda s: "2023" not in s , never_visit_urls)))
-    
+    target_urls = sorted(list(filter(lambda s: not bool(re.compile(r'2023|ecuador-2022|mexico-2018|nicaragua-2018').search(s)) , never_visit_urls))) 
     
     # crawl target url
     for url in target_urls:

@@ -23,16 +23,16 @@ def get_response_by_my_requsest(url):
 class Crawler:
     def __init__(self, result_url):
         self.result_url = result_url
-        self.content = {}
+        self.contents = {}
         self.page_info = {"visited_result_url_list": [result_url], "individual_flag": set(), "individual_unique_links": set()}
     # @dataclass
     # class Result:
     #     result_url: str
-    #     content: dict
+    #     contents: dict
     #     page_info: dict
         
     def export_result_as_list(self):
-        return [self.result_url, json.dumps(self.content, ensure_ascii=False), json.dumps(self.page_info, ensure_ascii=False)]
+        return [self.result_url, json.dumps(self.contents, ensure_ascii=False), json.dumps(self.page_info, ensure_ascii=False)]
     
     def crawl(self):
         # URLからコンテンツを取得
@@ -44,20 +44,23 @@ class Crawler:
             # 追加URLをvisitedとして記録
             self.page_info['visited_result_url_list'].append(additional_url)
             # Responseの解析後、Result辞書を更新
-            self.content, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.content, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info)
             # 追加のGETリクエストを送信
             additional_contents = get_response_by_my_requsest(additional_url)
-            self.content, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.content, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.contents, page_info_container=self.page_info)
         else:
-            self.content, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.content, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info)
         # 個別ページのクローリングとスクレイピングをし、結果を更新
         individual_column_list = self.page_info['individual_flag']
         if len(individual_column_list) > 0:
             for table_name in list(individual_column_list):
-                for i, row in enumerate(self.content[table_name]):
-                    row.update({'individual_result': myscraper.extractInfoFromIndividuals(
-                        get_response_by_my_requsest(row['url']), row['url'])})
-                    self.content[table_name][i] = row
+                for i, row in enumerate(self.contents[table_name]):
+                    # 既に訪れたことのあるURLかチェック
+                    if row['url'] not in self.page_info['individual_unique_links']:
+                        # 初めて訪れたURLとして保存
+                        self.page_info['individual_unique_links'].add(row['url'])
+                        row.update({'individual_result': myscraper.extractInfoFromIndividuals(get_response_by_my_requsest(row['url']), row['url'])})
+                        self.contents[table_name][i] = row
         # 最後にセットをリストに変換
         self.page_info["individual_flag"] = list(self.page_info["individual_flag"])
         self.page_info["individual_unique_links"] = list(self.page_info["individual_unique_links"])
