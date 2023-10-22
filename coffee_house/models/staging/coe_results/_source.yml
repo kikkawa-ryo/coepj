@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: staging
+    schema: datalake
+    tables:
+      - name: coe_results
+      

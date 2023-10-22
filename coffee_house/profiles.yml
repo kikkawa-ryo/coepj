@@ -1,0 +1,14 @@
+coffee_house:
+  outputs:
+    dev:
+      dataset: coffee_house
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      keyfile: credential/coffee-research-dee4cd5aed7e.json
+      location: asia-northeast1
+      method: service-account
+      priority: interactive
+      project: coffee-research
+      threads: 5
+      type: bigquery
+  target: dev
