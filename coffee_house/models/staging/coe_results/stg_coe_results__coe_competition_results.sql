@@ -28,8 +28,8 @@ source as (
         end as rank,
     -- score
         case
-            when coe_competition_result.SCORE is not null then cast(json_value(coe_competition_result, '$.SCORE') as numeric)
-            when coe_competition_result.Score is not null then cast(json_value(coe_competition_result, '$.Score') as numeric)
+            when coe_competition_result.SCORE is not null then cast(replace(json_value(coe_competition_result, '$.SCORE'), ',', '') as numeric)
+            when coe_competition_result.Score is not null then cast(replace(json_value(coe_competition_result, '$.Score'), ',', '') as numeric)
             else null
         end as score,  
     -- farm / farmer
@@ -98,13 +98,18 @@ source as (
             else null
         end as zone,
     -- lot No.
-        cast(json_value(coe_competition_result, '$.LOT_NO_') as int) as lot_no,
+        -- cast(json_value(coe_competition_result, '$.LOT_NO_') as int) as lot_no,
+        json_value(coe_competition_result, '$.LOT_NO_') as lot_no,
     -- size
         case
-            when coe_competition_result.SIZE is not null then cast(json_value(coe_competition_result, '$.SIZE') as int)
-            when coe_competition_result.Size is not null then cast(json_value(coe_competition_result, '$.Size') as int)
-            when coe_competition_result.SIZE__30KG_BOXES_ is not null then cast(json_value(coe_competition_result, '$.SIZE__30KG_BOXES_') as int)
-            when coe_competition_result.Size__30kg_Boxes_ is not null then cast(json_value(coe_competition_result, '$.Size__30kg_Boxes_') as int)
+            -- when coe_competition_result.SIZE is not null then cast(json_value(coe_competition_result, '$.SIZE') as int)
+            -- when coe_competition_result.Size is not null then cast(json_value(coe_competition_result, '$.Size') as int)
+            -- when coe_competition_result.SIZE__30KG_BOXES_ is not null then cast(json_value(coe_competition_result, '$.SIZE__30KG_BOXES_') as int)
+            -- when coe_competition_result.Size__30kg_Boxes_ is not null then cast(json_value(coe_competition_result, '$.Size__30kg_Boxes_') as int)
+            when coe_competition_result.SIZE is not null then json_value(coe_competition_result, '$.SIZE')
+            when coe_competition_result.Size is not null then json_value(coe_competition_result, '$.Size')
+            when coe_competition_result.SIZE__30KG_BOXES_ is not null then json_value(coe_competition_result, '$.SIZE__30KG_BOXES_')
+            when coe_competition_result.Size__30kg_Boxes_ is not null then json_value(coe_competition_result, '$.Size__30kg_Boxes_')
             else null
         end as size,
         case
