@@ -134,6 +134,10 @@ source as (
     -- indivudal result
         coe_competition_result.url                                               as indivudal_url,
         coe_competition_result.individual_result.description                     as indivudal_description,
+        case
+            when if(coe_competition_result.farm_information is not null, true, false) then "renewal"
+            else "previous"
+        end as site_flg,
     -- previous site
         coe_competition_result.individual_result.detail.Acidity                  as indivudal_attributes_acidity,
         coe_competition_result.individual_result.detail.Altitude                 as indivudal_altitude,
@@ -244,6 +248,7 @@ source as (
         weight_kg_lbs_flg,
     -- indivudal result
         string(indivudal_url) as indivudal_url,
+        site_flg,
         indivudal_description,
         indivudal_attributes_acidity,
         indivudal_altitude,
