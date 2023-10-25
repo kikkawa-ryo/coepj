@@ -17,7 +17,7 @@ source as (
         source
 )
 
-, column_identify_and_get_json_value as (
+, get_json_value_and_make_flag as (
     select
         coe_competition_results.url as program_url,
     -- rank
@@ -130,8 +130,48 @@ source as (
             else 0
         end as weight_kg_lbs_flg,
     -- indivudal result
-        coe_competition_result.url as indivudal_url,
-        coe_competition_result.individual_result
+        coe_competition_result.url                                               as indivudal_url,
+        coe_competition_result.individual_result.description                     as indivudal_description,
+    -- previous site
+        coe_competition_result.individual_result.detail.Acidity                  as indivudal_attributes_acidity,
+        coe_competition_result.individual_result.detail.Altitude                 as indivudal_altitude,
+        coe_competition_result.individual_result.detail.Aroma_Flavor             as indivudal_attributes_aroma_flavor,
+        coe_competition_result.individual_result.detail.Auction                  as indivudal_auction,
+        coe_competition_result.individual_result.detail.Auction_Lot_Size__kg_    as indivudal_auction_lot_size_kg,
+        coe_competition_result.individual_result.detail.Auction_Lot_Size__lbs__  as indivudal_auction_lot_size_lbs,
+        coe_competition_result.individual_result.detail.Business_Address         as indivudal_business_address,
+        coe_competition_result.individual_result.detail.Business_Phone_Number    as indivudal_business_phone_number,
+        coe_competition_result.individual_result.detail.Business_Website_Address as indivudal_business_website_address,
+        coe_competition_result.individual_result.detail.Certifications           as indivudal_certifications,
+        coe_competition_result.individual_result.detail.City                     as indivudal_city,
+        coe_competition_result.individual_result.detail.Coffee_Characteristics   as indivudal_attributes_coffee_characteristics,
+        coe_competition_result.individual_result.detail.Coffee_Growing_Area      as indivudal_coffee_growing_area,
+        coe_competition_result.individual_result.detail.Country                  as indivudal_country,
+        coe_competition_result.individual_result.detail.Farm_Name                as indivudal_farm_name,
+        coe_competition_result.individual_result.detail.Farm_Size                as indivudal_farm_size,
+        coe_competition_result.individual_result.detail.Farmer_Rep_              as indivudal_farmer_rep,
+        coe_competition_result.individual_result.detail.High_bid                 as indivudal_high_bid,
+        coe_competition_result.individual_result.detail.High_bidders             as indivudal_high_bidders,
+        coe_competition_result.individual_result.detail.Kilos                    as indivudal_kilos,
+        coe_competition_result.individual_result.detail.Month                    as indivudal_month,
+        coe_competition_result.individual_result.detail.Other                    as indivudal_attributes_other,
+        coe_competition_result.individual_result.detail.Overall                  as indivudal_attributes_overall,
+        coe_competition_result.individual_result.detail.Processing_system        as indivudal_processing_system,
+        coe_competition_result.individual_result.detail.Program                  as indivudal_program,
+        coe_competition_result.individual_result.detail.Rank                     as indivudal_rank,
+        coe_competition_result.individual_result.detail.Region                   as indivudal_region,
+        coe_competition_result.individual_result.detail.Size__30kg_boxes_        as indivudal_size__30kg_boxes,
+        coe_competition_result.individual_result.detail.Total_value              as indivudal_total_value,
+        coe_competition_result.individual_result.detail.Variety_                 as indivudal_variety,
+        coe_competition_result.individual_result.detail.Year                     as indivudal_year,
+    -- renewal site
+        coe_competition_result.individual_result.farm_information                as indivudal_farm_information,
+        coe_competition_result.individual_result.gallery                         as indivudal_gallery,
+        coe_competition_result.individual_result.images                          as indivudal_images,
+        coe_competition_result.individual_result.location                        as indivudal_location,
+        coe_competition_result.individual_result.lot_information                 as indivudal_lot_information,
+        coe_competition_result.individual_result.score                           as indivudal_score,
+        coe_competition_result.individual_result.similar_farm                    as indivudal_similar_farm,
     from
         coe_competition_results
         , unnest(json_query_array(coe_competition_results_array)) as coe_competition_result
@@ -142,69 +182,107 @@ source as (
         program_url,
     -- rank
         case
-            when rank.text is not null then cast(json_value(rank, '$.text') as string)
-            else string(rank)
-        end as rank,
+            when table_rank.text is not null then cast(json_value(table_rank, '$.text') as string)
+            else string(table_rank)
+        end as table_rank,
     -- score
         case
-            when score.text is not null then cast(replace(cast(json_value(score, '$.text') as string), ',', '.') as numeric)
-            else cast(replace(string(score), ',', '.') as numeric)
-        end as score,  
+            when table_score.text is not null then cast(replace(cast(json_value(table_score, '$.text') as string), ',', '.') as numeric)
+            else cast(replace(string(table_score), ',', '.') as numeric)
+        end as table_score,  
     -- farm / farmer
         case
-            when farm_cws.text is not null then cast(json_value(farm_cws, '$.text') as string)
-            else string(farm_cws)
-        end as farm_cws,
+            when table_farm_cws.text is not null then cast(json_value(table_farm_cws, '$.text') as string)
+            else string(table_farm_cws)
+        end as table_farm_cws,
         cws_flg,
         case
-            when farmer_rep_org.text is not null then cast(json_value(farmer_rep_org, '$.text') as string)
-            else string(farmer_rep_org)
-        end as farmer_rep_org,
+            when table_farmer_rep_org.text is not null then cast(json_value(table_farmer_rep_org, '$.text') as string)
+            else string(table_farmer_rep_org)
+        end as table_farmer_rep_org,
         rep_org_flg,
     -- variety
         case
-            when variety.text is not null then cast(json_value(variety, '$.text') as string)
-            else string(variety)
-        end as variety,
+            when table_variety.text is not null then cast(json_value(table_variety, '$.text') as string)
+            else string(table_variety)
+        end as table_variety,
     -- process
         case
-            when process.text is not null then cast(json_value(process, '$.text') as string)
-            else string(process)
-        end as process,
+            when table_process.text is not null then cast(json_value(table_process, '$.text') as string)
+            else string(table_process)
+        end as table_process,
     -- region
         case
-            when region.text is not null then cast(json_value(region, '$.text') as string)
-            else string(region)
-        end as region,
+            when table_region.text is not null then cast(json_value(table_region, '$.text') as string)
+            else string(table_region)
+        end as table_region,
     -- woreda
         case
-            when woreda.text is not null then cast(json_value(woreda, '$.text') as string)
-            else string(woreda)
-        end as woreda,
+            when table_woreda.text is not null then cast(json_value(table_woreda, '$.text') as string)
+            else string(table_woreda)
+        end as table_woreda,
     -- zone
         case
-            when zone.text is not null then cast(json_value(zone, '$.text') as string)
-            else string(zone)
-        end as zone,
+            when table_zone.text is not null then cast(json_value(table_zone, '$.text') as string)
+            else string(table_zone)
+        end as table_zone,
     -- lot No.
-        string(lot_no) as lot_no,
+        string(lot_no) as table_lot_no,
     -- size
         case
-            when size.text is not null then cast(json_value(size, '$.text') as string)
-            else string(size)
-        end as size,
+            when table_size.text is not null then cast(json_value(table_size, '$.text') as string)
+            else string(table_size)
+        end as table_size,
         size_30kg_boxes_flg,
     -- weight
         case
-            when weight.text is not null then cast(json_value(weight, '$.text') as string)
-            else string(weight)
-        end as weight,
+            when table_weight.text is not null then cast(json_value(table_weight, '$.text') as string)
+            else string(table_weight)
+        end as table_weight,
         weight_kg_lbs_flg,
     -- indivudal result
         string(indivudal_url) as indivudal_url,
-        individual_result
+        indivudal_description,
+        indivudal_attributes_acidity,
+        indivudal_altitude,
+        indivudal_attributes_aroma_flavor,
+        indivudal_auction,
+        indivudal_auction_lot_size_kg,
+        indivudal_auction_lot_size_lbs,
+        indivudal_business_address,
+        indivudal_business_phone_number,
+        indivudal_business_website_address,
+        indivudal_certifications,
+        indivudal_city,
+        indivudal_attributes_coffee_characteristics,
+        indivudal_coffee_growing_area,
+        indivudal_country,
+        indivudal_farm_name,
+        indivudal_farm_size,
+        indivudal_farmer_rep,
+        indivudal_high_bid,
+        indivudal_high_bidders,
+        indivudal_kilos,
+        indivudal_month,
+        indivudal_attributes_other,
+        indivudal_attributes_overall,
+        indivudal_processing_system,
+        indivudal_program,
+        indivudal_rank,
+        indivudal_region,
+        indivudal_size__30kg_boxes,
+        indivudal_total_value,
+        indivudal_variety,
+        indivudal_year,
+        indivudal_farm_information,
+        indivudal_gallery,
+        indivudal_images,
+        indivudal_location,
+        indivudal_lot_information,
+        indivudal_score,
+        indivudal_similar_farm,
     from
-        column_identify_and_get_json_value
+        aggregate_columns_and_rename
 )
 
 , final as (
