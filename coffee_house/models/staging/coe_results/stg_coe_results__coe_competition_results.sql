@@ -18,6 +18,7 @@ source as (
 )
 
 , get_json_value_and_make_flag as (
+    -- table情報において名寄せとフラグ作成
     select
         coe_competition_results.url as program_url,
     -- rank
@@ -129,6 +130,7 @@ source as (
             when coe_competition_result.Weight___lbs is not null then 2
             else 0
         end as weight_kg_lbs_flg,
+    -- 個別ページに関する情報をjson形式から展開
     -- indivudal result
         coe_competition_result.url                                               as indivudal_url,
         coe_competition_result.individual_result.description                     as indivudal_description,
@@ -182,62 +184,62 @@ source as (
         program_url,
     -- rank
         case
-            when table_rank.text is not null then cast(json_value(table_rank, '$.text') as string)
-            else string(table_rank)
+            when rank.text is not null then cast(json_value(rank, '$.text') as string)
+            else string(rank)
         end as table_rank,
     -- score
         case
-            when table_score.text is not null then cast(replace(cast(json_value(table_score, '$.text') as string), ',', '.') as numeric)
-            else cast(replace(string(table_score), ',', '.') as numeric)
+            when score.text is not null then cast(replace(cast(json_value(score, '$.text') as string), ',', '.') as numeric)
+            else cast(replace(string(score), ',', '.') as numeric)
         end as table_score,  
     -- farm / farmer
         case
-            when table_farm_cws.text is not null then cast(json_value(table_farm_cws, '$.text') as string)
-            else string(table_farm_cws)
+            when farm_cws.text is not null then cast(json_value(farm_cws, '$.text') as string)
+            else string(farm_cws)
         end as table_farm_cws,
         cws_flg,
         case
-            when table_farmer_rep_org.text is not null then cast(json_value(table_farmer_rep_org, '$.text') as string)
-            else string(table_farmer_rep_org)
+            when farmer_rep_org.text is not null then cast(json_value(farmer_rep_org, '$.text') as string)
+            else string(farmer_rep_org)
         end as table_farmer_rep_org,
         rep_org_flg,
     -- variety
         case
-            when table_variety.text is not null then cast(json_value(table_variety, '$.text') as string)
-            else string(table_variety)
+            when variety.text is not null then cast(json_value(variety, '$.text') as string)
+            else string(variety)
         end as table_variety,
     -- process
         case
-            when table_process.text is not null then cast(json_value(table_process, '$.text') as string)
-            else string(table_process)
+            when process.text is not null then cast(json_value(process, '$.text') as string)
+            else string(process)
         end as table_process,
     -- region
         case
-            when table_region.text is not null then cast(json_value(table_region, '$.text') as string)
-            else string(table_region)
+            when region.text is not null then cast(json_value(region, '$.text') as string)
+            else string(region)
         end as table_region,
     -- woreda
         case
-            when table_woreda.text is not null then cast(json_value(table_woreda, '$.text') as string)
-            else string(table_woreda)
+            when woreda.text is not null then cast(json_value(woreda, '$.text') as string)
+            else string(woreda)
         end as table_woreda,
     -- zone
         case
-            when table_zone.text is not null then cast(json_value(table_zone, '$.text') as string)
-            else string(table_zone)
+            when zone.text is not null then cast(json_value(zone, '$.text') as string)
+            else string(zone)
         end as table_zone,
     -- lot No.
         string(lot_no) as table_lot_no,
     -- size
         case
-            when table_size.text is not null then cast(json_value(table_size, '$.text') as string)
-            else string(table_size)
+            when size.text is not null then cast(json_value(size, '$.text') as string)
+            else string(size)
         end as table_size,
         size_30kg_boxes_flg,
     -- weight
         case
-            when table_weight.text is not null then cast(json_value(table_weight, '$.text') as string)
-            else string(table_weight)
+            when weight.text is not null then cast(json_value(weight, '$.text') as string)
+            else string(weight)
         end as table_weight,
         weight_kg_lbs_flg,
     -- indivudal result
@@ -282,7 +284,7 @@ source as (
         indivudal_score,
         indivudal_similar_farm,
     from
-        aggregate_columns_and_rename
+        get_json_value_and_make_flag
 )
 
 , final as (
