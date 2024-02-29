@@ -15,7 +15,7 @@ def get_result_urls(url):
 
 
 def get_response_by_my_requsest(url):
-    time.sleep(2)
+    time.sleep(7)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
     return response.content
 
@@ -59,6 +59,7 @@ class Crawler:
                     if row['url'] not in self.page_info['individual_unique_links']:
                         # 初めて訪れたURLとして保存
                         self.page_info['individual_unique_links'].add(row['url'])
+                        print(row['url'])
                         row.update({'individual_result': myscraper.extractInfoFromIndividuals(get_response_by_my_requsest(row['url']), row['url'])})
                         self.contents[table_name][i] = row
         # 最後にセットをリストに変換
