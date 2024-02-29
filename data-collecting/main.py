@@ -16,8 +16,8 @@ def main():
     # make this time urls list
     never_visit_urls = list(set(result_urls)-set(visited_urls))
     # filered list
-    target_urls = sorted(list(filter(lambda s: not bool(re.compile(r'2023|ecuador-2022|mexico-2018|nicaragua-2018').search(s)) , never_visit_urls))) 
-    
+    target_urls = sorted(list(filter(lambda s: not bool(re.compile(r'2023').search(s)) , never_visit_urls)))
+
     # crawl target url
     for url in target_urls:
         print(url)
@@ -28,7 +28,7 @@ def main():
         detail_crawler.crawl()
 
         # save data as csv file
-        file_name = detail_crawler.page_info['program'].lower().replace(' ', '-')
+        file_name = re.sub("https:\/\/(.+?)\/(.+?)\/", r"\2", url)
         
         with open('data-collecting/data/tmp.csv', 'w', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
