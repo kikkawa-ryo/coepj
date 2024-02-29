@@ -4,5 +4,6 @@ sources:
   - name: staging
     schema: datalake
     tables:
+      - name: cup_of_excellence
       - name: coe_results
       
