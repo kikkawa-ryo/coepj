@@ -10,21 +10,20 @@ source as (
   select * from {{ source('staging', 'coe_results') }}
 )
 
-, indexing as (
-  select
-    *
-    , row_number()
-      over(order by url)
-      as refId
-  from source
+, identify_url as (
+  SELECT 
+    url
+    , ARRAY_AGG(s LIMIT 1)[OFFSET(0)] contents
+  FROM
+    source s
+  GROUP BY
+    url
 )
 
 , final as (
   select
-    * except(refId)
-  from indexing
-  where
-    refId in (select max(refId) from indexing group by url)
+    contents.*
+  from identify_url
 )
 
 select * from final

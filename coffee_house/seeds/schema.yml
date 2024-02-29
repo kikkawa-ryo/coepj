@@ -1,0 +1,10 @@
+version: 2
+
+seeds:
+  - name: seed_fixed_data
+    config:
+      column_types:
+        is_fixed: INTEGER
+        OFFSET: INTEGER
+        url: STRING
+        coe_competition_result: JSON
