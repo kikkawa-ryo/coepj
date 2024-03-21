@@ -1,7 +1,7 @@
 with
 
 source as (
-    select * from {{ ref('stg_coe_results') }}
+    select * from {{ ref('base_cup_of_excellence') }}
 )
 
 , national_juries as (

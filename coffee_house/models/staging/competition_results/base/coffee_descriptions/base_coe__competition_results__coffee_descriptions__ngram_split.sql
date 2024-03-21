@@ -4,7 +4,7 @@ with target_table as (
         acidity_str_raw, aroma_flavor_str_raw, other_str_raw, overall_str_raw, characteristics_str_raw,
         acidity_str_agg, aroma_flavor_str_agg, other_str_agg, overall_str_agg, characteristics_str_agg
     FROM
-        {{ ref("base_cup_of_excellence__coe_results_coffee_descriptions_processing") }}
+        {{ ref("base_coe__competition_results__coffee_descriptions__processing") }}
 )
 
 , step0 as (
@@ -71,11 +71,11 @@ with target_table as (
 , aggregating as (
     select
         id,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "acidity", description_str_agg, ""))) as acidity_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "aroma_flavor", description_str_agg, ""))) as aroma_flavor_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "other", description_str_agg, ""))) as other_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "overall", description_str_agg, ""))) as overall_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "characteristics", description_str_agg, ""))) as characteristics_str_agg,
+        ANY_VALUE(if(attributes="acidity", description_str_agg, null))         as acidity_str_agg,
+        ANY_VALUE(if(attributes="aroma_flavor", description_str_agg, null))    as aroma_flavor_str_agg,
+        ANY_VALUE(if(attributes="other", description_str_agg, null))           as other_str_agg,
+        ANY_VALUE(if(attributes="overall", description_str_agg, null))         as overall_str_agg,
+        ANY_VALUE(if(attributes="characteristics", description_str_agg, null)) as characteristics_str_agg,
     from
         processed
     group by

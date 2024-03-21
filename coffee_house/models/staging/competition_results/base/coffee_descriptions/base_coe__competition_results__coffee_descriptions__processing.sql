@@ -5,7 +5,7 @@
 with
 
 raw_table as (
-    select * from {{ ref("base_cup_of_excellence__coe_results_get_columns") }}
+    select * from {{ ref("base_coe__competition_results__get_columns") }}
 )
 
 , pre_processing_0 as (
@@ -160,7 +160,7 @@ raw_table as (
         processing.id,
         processing.attributes,
         STRING_AGG(processing.description_str, ",") as description_str_agg,
-        max(pre_processing_0.description_str) as description_str_raw,
+        max(pre_processing_0.description_str)       as description_str_raw,
     from
         processing
     left join pre_processing_0
@@ -170,21 +170,30 @@ raw_table as (
         id,
         attributes
 )
+, fillna as (
+    select
+        id,
+        attributes,
+        if(description_str_agg != "", description_str_agg, null) as description_str_agg,
+        if(description_str_raw != "", description_str_raw, null) as description_str_raw,
+    from
+        aggregating
+)
 , final as (
     select
         id,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "acidity", description_str_agg, ""))) as acidity_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "aroma_flavor", description_str_agg, ""))) as aroma_flavor_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "other", description_str_agg, ""))) as other_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "overall", description_str_agg, ""))) as overall_str_agg,
-        ANY_VALUE(description_str_agg HAVING MAX length(if(attributes = "characteristics", description_str_agg, ""))) as characteristics_str_agg,
-        ANY_VALUE(description_str_raw HAVING MAX length(if(attributes = "acidity", description_str_raw, ""))) as acidity_str_raw,
-        ANY_VALUE(description_str_raw HAVING MAX length(if(attributes = "aroma_flavor", description_str_raw, ""))) as aroma_flavor_str_raw,
-        ANY_VALUE(description_str_raw HAVING MAX length(if(attributes = "other", description_str_raw, ""))) as other_str_raw,
-        ANY_VALUE(description_str_raw HAVING MAX length(if(attributes = "overall", description_str_raw, ""))) as overall_str_raw,
-        ANY_VALUE(description_str_raw HAVING MAX length(if(attributes = "characteristics", description_str_raw, ""))) as characteristics_str_raw,
+        ANY_VALUE(if(attributes="acidity", description_str_agg, null))         as acidity_str_agg,
+        ANY_VALUE(if(attributes="aroma_flavor", description_str_agg, null))    as aroma_flavor_str_agg,
+        ANY_VALUE(if(attributes="other", description_str_agg, null))           as other_str_agg,
+        ANY_VALUE(if(attributes="overall", description_str_agg, null))         as overall_str_agg,
+        ANY_VALUE(if(attributes="characteristics", description_str_agg, null)) as characteristics_str_agg,
+        ANY_VALUE(if(attributes="acidity", description_str_raw, null))         as acidity_str_raw,
+        ANY_VALUE(if(attributes="aroma_flavor", description_str_raw, null))    as aroma_flavor_str_raw,
+        ANY_VALUE(if(attributes="other", description_str_raw, null))           as other_str_raw,
+        ANY_VALUE(if(attributes="overall", description_str_raw, null))         as overall_str_raw,
+        ANY_VALUE(if(attributes="characteristics", description_str_raw, null)) as characteristics_str_raw,
     from
-        aggregating
+        fillna
     group by
         id
     order by id desc

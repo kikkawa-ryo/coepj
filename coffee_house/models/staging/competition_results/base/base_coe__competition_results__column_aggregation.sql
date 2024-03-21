@@ -1,7 +1,7 @@
 with
 
 not_aggregated_table as (
-    select * from {{ ref('base_cup_of_excellence__coe_results_get_columns') }}
+    select * from {{ ref('base_coe__competition_results__get_columns') }}
 )
 
 , aggregated_table as (
