@@ -11,23 +11,27 @@ def extract_links(parse_target):
     """
     soup = BeautifulSoup(parse_target, 'lxml')
     # 1.soup -> div str -> ul list
-    ul = soup.find(class_="menu-coe-country-programs-menu-container").select("ul.sub-menu")
+    ul = soup.find(
+        class_="menu-coe-country-programs-menu-container").select("ul.sub-menu")
     # 2.ul [] -> a [[]]
     a = list(map(lambda ul: ul.select("a"), ul))
     # 3.a [[]] -> a [] -> href []
     links = list(map(lambda a: a.get("href"), sum(a, [])))
     return links
 
+
 def check_and_get_additional_url(parse_target):
     soup = BeautifulSoup(parse_target, 'lxml')
     # coeへのリンクが存在するかどうかのチェック
-    a = soup.select('div.wprt-container div')[0].find(href=re.compile('https://cupofexcellence.org(?!.*global-coffee-centers)'))
+    a = soup.select('div.wprt-container div')[0].find(href=re.compile(
+        'https://cupofexcellence.org(?!.*global-coffee-centers)'))
     if a:
         url = a.get('href')
         return url
     else:
         return None
-    
+
+
 def is_validated_url(url):
     return not bool(re.compile(r'auction.allianceforcoffeeexcellence.org|cdn-cgi').search(url))
 
@@ -42,6 +46,7 @@ def blank_fixer(text):
         str: 空白
     """
     return re.sub('\s{2,}', ' ', text).strip()
+
 
 def chooseBestLink(a):
     d = re.compile(r'\s\d+w')
@@ -59,21 +64,23 @@ def chooseBestLink(a):
         return links
 
 
-def scrapingPage(parse_target, content_container, page_info_container):
+def scrapingPage(parse_target, content_container, page_info_container, taget_url):
     soup = BeautifulSoup(parse_target, 'lxml')
     # 大会プログラムを説明するようなデータ
     page_info_container['program'] = soup.find('h1').get_text().strip()
     page_info_container['description'] = [{'p': [x.text for x in block.find_all('p')],
-                                        'li': [x.text for x in block.find_all('li')]} for block in soup.select('h1 ~ div > div.mk-text-block')]
-    page_info_container['remarks'] = [x.text for x in soup.select('div.vc_tta-container ~ div p')]
+                                           'li': [x.text for x in block.find_all('li')]} for block in soup.select('h1 ~ div > div.mk-text-block')]
+    page_info_container['remarks'] = [
+        x.text for x in soup.select('div.vc_tta-container ~ div p')]
 
     # 各テーブル情報の抽出
     panels = soup.find_all('div', attrs={'class': 'vc_tta-panel'})  # テーブルリスト
-    content_container, page_info_container = extractInfoFromPanels(panels, content_container, page_info_container)
+    content_container, page_info_container = extractInfoFromPanels(
+        panels, content_container, page_info_container, taget_url)
     return content_container, page_info_container
 
 
-def extractInfoFromPanels(panels, content_container, page_info_container):
+def extractInfoFromPanels(panels, content_container, page_info_container, taget_url):
     """from panels html to dict
 
     Args:
@@ -89,19 +96,20 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
     column_fixer = re.compile('[^a-zA-Z0-9]')
     for panel in panels:
         # panelのタイトル
-        panel_title = panel.find('span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
+        panel_title = panel.find(
+            'span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
         panel_title = column_fixer.sub('_', blank_fixer(panel_title))
         # sponsor
         if 'sponsor' in panel_title.lower():
             if (panel.img is None) and (panel.ul is None):
                 content_container[panel_title] = None
             if panel.img is not None:
-                content_container[panel_title] = {'img':{'url': [img.get('src') for img in panel.find_all('img')]}}
+                content_container[panel_title] = {
+                    'img': {'url': [img.get('src') for img in panel.find_all('img')]}}
             if panel.ul is not None:
-                content_container[panel_title] = {'li': [{'text': li.text.strip()
-                                                          , 'url': li.a.get('href') if li.a is not None else None} 
+                content_container[panel_title] = {'li': [{'text': li.text.strip(), 'url': li.a.get('href') if li.a is not None else None}
                                                          for li in panel.find_all('li')]}
-                                                         
+
         # panelがtableのケース
         elif panel.table:
             # 各パネルの箱と初期値
@@ -112,7 +120,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
             # 複数ある場合最初のもので十分
             table = panel.table
             # tdにheader情報が存在する場合
-            if table.find('td', attrs={'class': 'mtr-td-tag'}):
+            if table.find('td', attrs={'class': 'mtr-td-tag'}) and not ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
                 # 審査員テーブルが存在する場合
                 if 'jury' in panel_title.lower():
                     bool_jury = True
@@ -145,7 +153,8 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                     # 各セルごとの処理
                     for td in tr.find_all('td'):
                         # カラム名取得
-                        column = column_fixer.sub('_', blank_fixer(td.get('data-mtr-content')))
+                        column = column_fixer.sub(
+                            '_', blank_fixer(td.get('data-mtr-content')))
                         # divとして値が設定されている場合
                         if td.get('data-sheets-value'):
                             # textとdivの比較し、同じ場合
@@ -163,12 +172,14 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                             if is_validated_url(individual_url):
                                 row['url'] = individual_url
                                 # tableごとにURLが存在したかをチェック
-                                page_info_container['individual_flag'].add(panel_title)
+                                page_info_container['individual_flag'].add(
+                                    panel_title)
                     # write row
                     content_container[panel_title].append(row)
             # theadがあるパターン
-            elif table.thead:
-                columns = list(map(lambda x: column_fixer.sub('_', blank_fixer(x.text)), table.thead.find('tr').find_all('th')))
+            elif table.thead and not ("nicaragua-2018" in taget_url and "jury" in panel_title.lower()):
+                columns = list(map(lambda x: column_fixer.sub(
+                    '_', blank_fixer(x.text)), table.thead.find('tr').find_all('th')))
                 # 審査員テーブルが存在する場合
                 if 'jury' in panel_title.lower():
                     bool_jury = True
@@ -202,26 +213,39 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                             if is_validated_url(individual_url):
                                 row['url'] = individual_url
                                 # tableごとにURLが存在したかをチェック
-                                page_info_container['individual_flag'].add(panel_title)
+                                page_info_container['individual_flag'].add(
+                                    panel_title)
                     # write row
                     content_container[panel_title].append(row)
 
-            # 上記のどちらでもないパターン(Brazil2022, Mexico2018)
+            # 上記のどちらでもないパターン(Brazil2022, Mexico2018, honduras2018, nicaragu2018-jury)
             else:
-                count=0
+                count = 0
                 # 審査員テーブルが存在する場合
                 if 'jury' in panel_title.lower():
                     bool_jury = True
                 # １行ごとテーブル内容の処理
-                for tr in table.tbody.find_all('tr'):
+                if table.tbody:
+                    contents = table.tbody
+                else:
+                    contents = table.thead
+                for tr in contents.find_all('tr'):
                     # カラム名が保存されているはずの1行目の処理
-                    if count == 0:
-                        columns = list(map(lambda x: column_fixer.sub('_', blank_fixer(x.text)), tr.find_all('td')))
-                        count+=1
+                    if count == 0 and ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
+                        columns = ["Rank", "Farm", "Lot Size",
+                                   "High Bid", "Total Value", "High Bidder(s)"]
+                        count += 1
                         continue
-                    # span設定された行でない場合、１行ごとの箱を初期化
+                    elif count == 0:
+                        columns = list(map(lambda x: column_fixer.sub(
+                            '_', blank_fixer(x.text)), tr.find_all('td')))
+                        count += 1
+                        continue
+                    # rowspan設定された行でない場合、１行ごとの箱を初期化
                     if "bool_rowspan" in locals():
-                        content_container[panel_title][-1][target_column] = content_container[panel_title][-1][target_column] + "+" + tr.td.text.strip()
+                        # 前の行で保存した値＋今回の行の値に更新
+                        content_container[panel_title][-1][target_column] = content_container[panel_title][-1][target_column] + \
+                            "+" + tr.td.text.strip()
                         num_of_row_remains += -1
                         if num_of_row_remains == 0:
                             del bool_rowspan
@@ -255,8 +279,10 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                                     page_info_container['individual_flag'].add(panel_title)
                     # span設定行
                     else:
-                        have_colspan = any(map(lambda td: td.get('colspan') is not None, tr.find_all('td')))
-                        have_rowspan = any(map(lambda td: td.get('rowspan') is not None, tr.find_all('td')))
+                        have_colspan = any(map(lambda td: td.get(
+                            'colspan') is not None, tr.find_all('td')))
+                        have_rowspan = any(map(lambda td: td.get(
+                            'rowspan') is not None, tr.find_all('td')))
                         # 各セルごとの処理
                         for column, td in zip(columns, tr.find_all('td')):
                             # イレギュラーセルの処理(colは存在すれば、rowは存在しなければイレギュラー)
@@ -270,15 +296,16 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                             elif have_rowspan and td.get('rowspan') is None:
                                 target_column = column
                                 bool_rowspan = True
-                                num_of_row_remains = int(td.parent.select_one("td[rowspan]").get('rowspan')) - 1
+                                num_of_row_remains = int(td.parent.select_one(
+                                    "td[rowspan]").get('rowspan')) - 1
                                 row[column] = td.text.strip()
                             # 通常セルの処理
                             else:
-                                # span設定されていた場合は該当セルの値を保存
+                                # colspan設定されていた場合は該当セルの値を保存
                                 if "bool_colspan" in locals():
                                     row[column] = target_value
                                     num_of_col_remains += -1
-                                    if num_of_row_remains == 0:
+                                    if num_of_col_remains == 0:
                                         del bool_colspan
                                 else:
                                     row[column] = td.text.strip()
@@ -289,7 +316,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container):
                                 if is_validated_url(individual_url):
                                     row['url'] = individual_url
                                     # tableごとにURLが存在したかをチェック
-                                    page_info_container['individual_flag'].add(panel_title)    
+                                    page_info_container['individual_flag'].add(panel_title)
                         # 初期化
                         del have_colspan
                         del have_rowspan
@@ -303,7 +330,8 @@ def extractInfoFromIndividuals(contents, url):
     soup = BeautifulSoup(contents, 'lxml')
     if ('cupofexcellence.org/directory' in url) or ('allianceforcoffeeexcellence.org/farm-directory' in url) or ('allianceforcoffeeexcellence.org/directory' in url):
         # image-links
-        images_urls_candidate_list = list(map(lambda x: x.img.get('srcset') if x.img.get('srcset') is not None else x.img.get('src'), soup.select('ul.other-images a')))
+        images_urls_candidate_list = list(map(
+            lambda x: x.img.get('srcset') if x.img.get('srcset') is not None else x.img.get('src'), soup.select('ul.other-images a')))
         images_result = []
         for l in [chooseBestLink(x) for x in images_urls_candidate_list]:
             images_result.append(l)
@@ -317,12 +345,12 @@ def extractInfoFromIndividuals(contents, url):
             individual_result['description']['tr'] = []
             individual_result['description']['li'] = []
         else:
-            individual_result['description']['p'] = [p.text.strip()
-                                                    for p in description[0].find_all('p')]
-            individual_result['description']['tr'] = [tr.text.strip()
-                                                    for tr in description[0].find_all('tr')]
-            individual_result['description']['li'] = [li.text.strip()
-                                                    for li in description[0].find_all('li')]
+            individual_result['description']['p'] = [
+                p.text.strip() for p in description[0].find_all('p')]
+            individual_result['description']['tr'] = [
+                tr.text.strip() for tr in description[0].find_all('tr')]
+            individual_result['description']['li'] = [
+                li.text.strip() for li in description[0].find_all('li')]
 
         # detail
         schema_fixer = re.compile('[^a-zA-Z0-9]')
@@ -358,7 +386,7 @@ def extractInfoFromIndividuals(contents, url):
                     class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
         except AttributeError:
             print("farm_information", url)
-            
+
         # Location
         individual_result['location'] = []
         try:
@@ -375,7 +403,7 @@ def extractInfoFromIndividuals(contents, url):
                     class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
         except AttributeError:
             print("score", url)
-            
+
         # Lot Information
         individual_result['lot_information'] = {}
         try:
@@ -384,7 +412,7 @@ def extractInfoFromIndividuals(contents, url):
                     class_="item-attr").text.strip()] = li.find(class_="item-property").text.strip()
         except AttributeError:
             print("lot_information", url)
-            
+
         # Similar Farm
         try:
             individual_result['similar_farm'] = [
