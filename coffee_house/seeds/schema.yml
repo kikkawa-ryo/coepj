@@ -1,7 +1,7 @@
 version: 2
 
 seeds:
-  - name: seed_fixed_data
+  - name: seed_coe__competition_results__fixed_data
     config:
       column_types:
         is_fixed: INTEGER
