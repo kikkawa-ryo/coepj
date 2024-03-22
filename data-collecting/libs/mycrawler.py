@@ -44,12 +44,12 @@ class Crawler:
             # 追加URLをvisitedとして記録
             self.page_info['visited_result_url_list'].append(additional_url)
             # Responseの解析後、Result辞書を更新
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, taget_url=self.result_url)
             # 追加のGETリクエストを送信
             additional_contents = get_response_by_my_requsest(additional_url)
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.contents, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.contents, page_info_container=self.page_info, taget_url=additional_url)
         else:
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, taget_url=self.result_url)
         # 個別ページのクローリングとスクレイピングをし、結果を更新
         individual_column_list = self.page_info['individual_flag']
         if len(individual_column_list) > 0:
