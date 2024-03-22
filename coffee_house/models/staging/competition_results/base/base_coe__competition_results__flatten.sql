@@ -1,7 +1,7 @@
 with
 
 source as (
-    select * from {{ ref('base_cup_of_excellence__coe_results') }}
+    select * from {{ ref('base_coe__competition_results') }}
 )
 
 , flatten_table as (
@@ -12,14 +12,13 @@ source as (
         coe_competition_result
     from
         source
-        , unnest(json_query_array(coe_competition_results_array)) as coe_competition_result
-    with OFFSET as OFFSET
+        , unnest(json_query_array(coe_competition_results_array)) as coe_competition_result with OFFSET
 )
 
 , concat_table as (
     select * from flatten_table
     union all
-    select * from {{ ref('seed_fixed_data') }}
+    select * from {{ ref('seed_coe__competition_results__fixed_data') }}
 )
 
 , filtered_table as (

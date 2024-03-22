@@ -10,7 +10,7 @@ source as (
   select * from {{ ref('base_cup_of_excellence') }}
 )
 
-, coe_results as (
+, coe_competition_results as (
     select
         url,
         case
@@ -24,4 +24,4 @@ source as (
         source
 )
 
-select * from coe_results
+select * from coe_competition_results

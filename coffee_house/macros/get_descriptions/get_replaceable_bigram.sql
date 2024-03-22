@@ -4,7 +4,7 @@
         with processed_descriptions as (
             SELECT acidity_str_agg, aroma_flavor_str_agg, other_str_agg, overall_str_agg, characteristics_str_agg
             {# FROM {{ ref("{{ model }}") }} #}
-            FROM {{ ref("base_cup_of_excellence__coe_results_coffee_descriptions_ngram_split") }}
+            FROM {{ ref("base_coe__competition_results__coffee_descriptions__ngram_split") }}
         )
         , union_descriptions as (
             SELECT acidity_str_agg as descriptions FROM processed_descriptions

@@ -5,7 +5,7 @@
 with
 
 flatten_table as (
-    select * from {{ ref('base_cup_of_excellence__coe_results_flatten') }}
+    select * from {{ ref('base_coe__competition_results__flatten') }}
 )
 
 , get_columns as (
