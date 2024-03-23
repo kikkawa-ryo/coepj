@@ -10,7 +10,7 @@ def get_visited_urls():
         SELECT DISTINCT
             url
         FROM
-            `coffee-research.datalake.coe_results`
+            `coffee-research.datalake.cup_of_excellence`
     """
     query_job = client.query(query)  # Make an API request.
     results = query_job.result()

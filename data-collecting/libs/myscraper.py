@@ -37,16 +37,12 @@ def is_validated_url(url):
 
 
 def blank_fixer(text):
-    """あらゆるカラム名に対する空白処理.2つ以上の空白を1つに,先頭末尾の空白の削除
+    return re.sub('\s{2,}', ' ', text.strip()).strip()
 
-    Args:
-        text (str): str型
-
-    Returns:
-        str: 空白
-    """
-    return re.sub('\s{2,}', ' ', text).strip()
-
+def column_fixer(text):
+    text = re.sub('\s{2,}', ' ', text.strip()).strip()
+    text = re.sub('[^a-zA-Z0-9]', '_', text.strip()).strip()
+    return text
 
 def chooseBestLink(a):
     d = re.compile(r'\s\d+w')
@@ -63,7 +59,6 @@ def chooseBestLink(a):
     else:
         return links
 
-
 def scrapingPage(parse_target, content_container, page_info_container, taget_url):
     soup = BeautifulSoup(parse_target, 'lxml')
     # 大会プログラムを説明するようなデータ
@@ -79,26 +74,14 @@ def scrapingPage(parse_target, content_container, page_info_container, taget_url
         panels, content_container, page_info_container, taget_url)
     return content_container, page_info_container
 
-
 def extractInfoFromPanels(panels, content_container, page_info_container, taget_url):
-    """from panels html to dict
-
-    Args:
-        panels (_type_): _description_
-        content_container (_type_): _description_
-        page_info_container (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
     # 正規表現の準備
     last_line_checker = re.compile('total|stat')
-    column_fixer = re.compile('[^a-zA-Z0-9]')
     for panel in panels:
         # panelのタイトル
         panel_title = panel.find(
             'span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
-        panel_title = column_fixer.sub('_', blank_fixer(panel_title))
+        panel_title = column_fixer(panel_title)
         # sponsor
         if 'sponsor' in panel_title.lower():
             if (panel.img is None) and (panel.ul is None):
@@ -153,8 +136,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container, taget_
                     # 各セルごとの処理
                     for td in tr.find_all('td'):
                         # カラム名取得
-                        column = column_fixer.sub(
-                            '_', blank_fixer(td.get('data-mtr-content')))
+                        column = column_fixer(td.get('data-mtr-content'))
                         # divとして値が設定されている場合
                         if td.get('data-sheets-value'):
                             # textとdivの比較し、同じ場合
@@ -178,8 +160,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container, taget_
                     content_container[panel_title].append(row)
             # theadがあるパターン
             elif table.thead and not ("nicaragua-2018" in taget_url and "jury" in panel_title.lower()):
-                columns = list(map(lambda x: column_fixer.sub(
-                    '_', blank_fixer(x.text)), table.thead.find('tr').find_all('th')))
+                columns = list(map(lambda x: column_fixer(x.text), table.thead.find('tr').find_all('th')))
                 # 審査員テーブルが存在する場合
                 if 'jury' in panel_title.lower():
                     bool_jury = True
@@ -233,12 +214,11 @@ def extractInfoFromPanels(panels, content_container, page_info_container, taget_
                     # カラム名が保存されているはずの1行目の処理
                     if count == 0 and ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
                         columns = ["Rank", "Farm", "Lot_Size",
-                                   "High_Bid", "Total_Value", "High_Bidder(s)"]
+                                   "High_Bid", "Total_Value", "High_Bidder_s_"]
                         count += 1
                         continue
                     elif count == 0:
-                        columns = list(map(lambda x: column_fixer.sub(
-                            '_', blank_fixer(x.text)), tr.find_all('td')))
+                        columns = list(map(lambda x: column_fixer(x.text), tr.find_all('td')))
                         count += 1
                         continue
                     # rowspan設定された行でない場合、１行ごとの箱を初期化
@@ -353,11 +333,10 @@ def extractInfoFromIndividuals(contents, url):
                 li.text.strip() for li in description[0].find_all('li')]
 
         # detail
-        schema_fixer = re.compile('[^a-zA-Z0-9]')
         details = soup.select('#listing-details tr')
         individual_table = {}
         for tr in details:
-            individual_table[schema_fixer.sub('_', tr.th.text)] = tr.td.text
+            individual_table[column_fixer(tr.th.text)] = tr.td.text
         individual_result['detail'] = individual_table
         return individual_result
 
