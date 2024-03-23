@@ -232,8 +232,8 @@ def extractInfoFromPanels(panels, content_container, page_info_container, taget_
                 for tr in contents.find_all('tr'):
                     # カラム名が保存されているはずの1行目の処理
                     if count == 0 and ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
-                        columns = ["Rank", "Farm", "Lot Size",
-                                   "High Bid", "Total Value", "High Bidder(s)"]
+                        columns = ["Rank", "Farm", "Lot_Size",
+                                   "High_Bid", "Total_Value", "High_Bidder(s)"]
                         count += 1
                         continue
                     elif count == 0:
