@@ -16,7 +16,7 @@ flatten_table as (
         year,
 
         -- エイリアスとカラム名のペアをマクロで取得する
-        {%- set columns_info = get_coe_competition_results_all_columns() -%}
+        {%- set columns_info = get_competition_results_columns() -%}
         -- カラムの名寄せを行う
         {% for columns_dict in columns_info.table %}
         case
