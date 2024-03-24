@@ -1,6 +1,6 @@
 {%- macro get_replaceable_bigram(model) %}
     {%- if execute %}
-    {%- set query -%} 
+        {%- set query -%}
         with processed_descriptions as (
             SELECT acidity_str_agg, aroma_flavor_str_agg, other_str_agg, overall_str_agg, characteristics_str_agg
             {# FROM {{ ref("{{ model }}") }} #}
@@ -56,7 +56,7 @@
             y.bigram is not null
             and x.cnt > y.cnt
             and x.cnt / y.cnt > 15
-    {%- endset -%}
-    {{ return(run_query(query).columns[0].values()) }}
+        {%- endset -%}
+        {{ return(run_query(query).columns[0].values()) }}
     {%- endif %}
 {%- endmacro %}

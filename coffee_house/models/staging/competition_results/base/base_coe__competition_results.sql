@@ -6,22 +6,19 @@
 
 with
 
-source as (
-  select * from {{ ref('base_cup_of_excellence') }}
-)
+    source as (select * from {{ ref('base_cup_of_excellence') }}),
+    coe_competition_results as (
+        select
+            url,
+            case
+                {% set columns = ["COE_Competition_Results", "Winning_Farms", "Winning_Farms_"] %}
+                {% for column in columns %}
+                    when contents.{{ column }} is not null then contents.{{ column }}
+                {% endfor %}
+                else null
+            end as coe_competition_results_array
+        from source
+    )
 
-, coe_competition_results as (
-    select
-        url,
-        case
-            {% set columns = ["COE_Competition_Results", "Winning_Farms", "Winning_Farms_"] %}
-            {% for column in columns %}
-            when contents.{{column}} is not null then contents.{{column}}
-            {% endfor %}
-            else null
-        end as coe_competition_results_array
-    from
-        source
-)
-
-select * from coe_competition_results
+select *
+from coe_competition_results

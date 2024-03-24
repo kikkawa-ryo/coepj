@@ -1,6 +1,6 @@
 {%- macro get_blank_adjusted_bigram(threshold, n) %}
     {%- if execute %}
-    {%- set query -%} 
+        {%- set query -%}
         with processed_descriptions as (
             SELECT acidity_str_agg, aroma_flavor_str_agg, other_str_agg, overall_str_agg, characteristics_str_agg
             FROM {{ ref("base_coe__competition_results__coffee_descriptions__ngram_split") }}
@@ -51,7 +51,7 @@
             where
                 regexp_contains(REGEXP_REPLACE(bigram, "(.+)\s(.+)", "\\2\s\\1"), candidate_bigram)
         )
-    {%- endset -%}
-    {{ return(run_query(query).columns[0].values()) }}
+        {%- endset -%}
+        {{ return(run_query(query).columns[0].values()) }}
     {%- endif %}
 {%- endmacro %}
