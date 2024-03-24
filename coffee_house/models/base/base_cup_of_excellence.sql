@@ -1,22 +1,11 @@
-with source as (
-      select * from {{ source('staging', 'cup_of_excellence') }}
-)
+with
+    source as (select * from {{ source('staging', 'cup_of_excellence') }}),
+    deduplicated as (
+        select url, array_agg(s order by s.url desc limit 1)[offset(0)] contents
+        from source s
+        group by url
+    ),
+    final as (select contents.* from deduplicated)
 
-, deduplicated as (
-  SELECT 
-    url
-    , ARRAY_AGG(s ORDER BY s.url DESC LIMIT 1)[OFFSET(0)] contents
-  FROM
-    source s
-  GROUP BY
-    url
-)
-
-, final as (
-  select
-    contents.*
-  from deduplicated
-)
-
-select * from final
-  
+select *
+from final

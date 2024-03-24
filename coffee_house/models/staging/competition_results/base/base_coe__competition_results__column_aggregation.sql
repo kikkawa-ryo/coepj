@@ -1,33 +1,32 @@
 with
 
-not_aggregated_table as (
-    select * from {{ ref('base_coe__competition_results__get_columns') }}
-)
-
-, aggregated_table as (
-    select
-        {# *, #}
-        offset,
-        program_url,
-        id,
-        CAST(year as INT) as year,
-        individual_url,
-        {# is_cws
+    not_aggregated_table as (
+        select * from {{ ref('base_coe__competition_results__get_columns') }}
+    ),
+    aggregated_table as (
+        select
+            {# *, #}
+            offset,
+            program_url,
+            id,
+            cast(year as int) as year,
+            individual_url,
+            {# is_cws
         rep_org_flg
         is_size_30kg_boxes
         weight_kg_lbs_flg #}
-        -- rank
-        CAST(REGEXP_EXTRACT(rank_table, "[0-9]+") as INT) as rank_no,
-        REGEXP_EXTRACT(LOWER(rank_table), "[^0-9]+") as rank_cd,
-        -- score
-        CAST(REPLACE(score_table, ",", ".") as NUMERIC)	as score,
-        -- farm name
-        REGEXP_REPLACE(farm_cws_table, r'[–]', '') as farm_cws_table,
-        REGEXP_REPLACE(Farm_Name_detail, r'–', '-') as Farm_Name_detail
+            -- rank
+            cast(regexp_extract(rank_table, "[0-9]+") as int) as rank_no,
+            regexp_extract(lower(rank_table), "[^0-9]+") as rank_cd,
+            -- score
+            cast(replace(score_table, ",", ".") as numeric) as score,
+            -- farm name
+            regexp_replace(farm_cws_table, r'[–]', '') as farm_cws_table,
+            regexp_replace(farm_name_detail, r'–', '-') as farm_name_detail
         -- descriptions
         {# Aroma_Flavor #}
-    from
-        not_aggregated_table
-)
+        from not_aggregated_table
+    )
 
-select * from aggregated_table
+select *
+from aggregated_table

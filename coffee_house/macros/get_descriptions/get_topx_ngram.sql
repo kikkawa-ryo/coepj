@@ -1,6 +1,6 @@
 {%- macro get_topx_ngram(threshold, n) %}
     {%- if execute %}
-    {%- set query -%} 
+        {%- set query -%}
         with processed_descriptions as (
             SELECT acidity_str_agg, aroma_flavor_str_agg, other_str_agg, overall_str_agg, characteristics_str_agg
             FROM {{ ref("base_coe__competition_results__coffee_descriptions__processing") }}
@@ -38,7 +38,7 @@
         from ngram_and_count
         where count >= {{ threshold }} and ngram = {{ n }}
         order by count desc
-    {%- endset -%}
-    {{ return(run_query(query).columns[0].values()) }}
+        {%- endset -%}
+        {{ return(run_query(query).columns[0].values()) }}
     {%- endif %}
 {%- endmacro %}

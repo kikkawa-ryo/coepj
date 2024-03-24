@@ -1,4 +1,4 @@
-{% macro get_coe_competition_results_all_columns() %}
+{% macro get_competition_results_columns() %}
     {{ return(
         {"table": 
             [ {"alias": "rank", "columns": ["RANK", "Rank"]}
