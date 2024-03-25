@@ -6,13 +6,17 @@
 
 with
 
-    source as (select * from {{ source('staging', 'coe_results') }}),
-    tmp as (
-        select url, array_agg(s order by s.url desc limit 1)[offset(0)] contents
-        from source s
-        group by url
-    ),
-    final as (select contents.* from tmp)
+source as (select *, from {{ source('staging', 'coe_results') }}),
+
+tmp as (
+    select
+        url,
+        array_agg(s order by s.url desc limit 1)[offset(0)] as contents,
+    from source as s
+    group by url
+),
+
+final as (select contents.*, from tmp)
 
 {# , indexing as (
   select
@@ -30,5 +34,5 @@ with
   where
     refId in (select max(refId) from indexing group by url)
 ) #}
-select *
+select *,
 from final
