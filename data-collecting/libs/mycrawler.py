@@ -15,7 +15,7 @@ def get_result_urls(url):
 
 
 def get_response_by_my_requsest(url):
-    time.sleep(7)
+    time.sleep(3)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
     return response.content
 
@@ -44,19 +44,19 @@ class Crawler:
             # 追加URLをvisitedとして記録
             self.page_info['visited_result_url_list'].append(additional_url)
             # Responseの解析後、Result辞書を更新
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, taget_url=self.result_url)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, target_url=self.result_url)
             # 追加のGETリクエストを送信
             additional_contents = get_response_by_my_requsest(additional_url)
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.contents, page_info_container=self.page_info, taget_url=additional_url)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=additional_contents, content_container=self.contents, page_info_container=self.page_info, target_url=additional_url)
         else:
-            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, taget_url=self.result_url)
+            self.contents, self.page_info = myscraper.scrapingPage(parse_target=contents, content_container=self.contents, page_info_container=self.page_info, target_url=self.result_url)
         # 個別ページのクローリングとスクレイピングをし、結果を更新
         individual_column_list = self.page_info['individual_flag']
         if len(individual_column_list) > 0:
             for table_name in list(individual_column_list):
                 for i, row in enumerate(self.contents[table_name]):
                     # 既に訪れたことのあるURLかチェック
-                    if row['url'] not in self.page_info['individual_unique_links']:
+                    if 'url' in row and row['url'] not in self.page_info['individual_unique_links']:
                         # 初めて訪れたURLとして保存
                         self.page_info['individual_unique_links'].add(row['url'])
                         print(row['url'])

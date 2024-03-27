@@ -5,6 +5,7 @@ import re
 
 def extract_links(parse_target):
     """HTMLレスポンスの文字列から、必要なContry-Yearのリンクを取得し返す関数
+    外部から呼び出される用途
 
     Args:
         parse_target (String): HTMLレスポンスの文字列
@@ -31,40 +32,14 @@ def check_and_get_additional_url(parse_target):
     else:
         return None
 
+def column_fixer(text):
+    text = re.sub('[^a-zA-Z0-9]', '_', text.strip()).strip()
+    text = re.sub('\s{2,}', ' ', text.strip()).strip()
+    text = re.sub('_{2,}', '_', text.strip()).strip()
+    text = text.casefold().title()
+    return text
 
-def is_validated_url(url):
-    return not bool(re.compile(r'auction.allianceforcoffeeexcellence.org|cdn-cgi').search(url))
-
-
-def blank_fixer(text):
-    """あらゆるカラム名に対する空白処理.2つ以上の空白を1つに,先頭末尾の空白の削除
-
-    Args:
-        text (str): str型
-
-    Returns:
-        str: 空白
-    """
-    return re.sub('\s{2,}', ' ', text).strip()
-
-
-def chooseBestLink(a):
-    d = re.compile(r'\s\d+w')
-    s = re.compile(r'\s|w')
-    linklist = a.split(',')
-    if len(linklist) == 1:
-        return a
-    resolutions = [int(s.sub('', d.search(l).group()))
-                   for l in linklist]
-    maxindex = resolutions.index(max(resolutions))
-    links = d.sub('', linklist[maxindex].strip())
-    if len(links) == 0:
-        return None
-    else:
-        return links
-
-
-def scrapingPage(parse_target, content_container, page_info_container, taget_url):
+def scrapingPage(parse_target, content_container, page_info_container, target_url):
     soup = BeautifulSoup(parse_target, 'lxml')
     # 大会プログラムを説明するようなデータ
     page_info_container['program'] = soup.find('h1').get_text().strip()
@@ -76,30 +51,31 @@ def scrapingPage(parse_target, content_container, page_info_container, taget_url
     # 各テーブル情報の抽出
     panels = soup.find_all('div', attrs={'class': 'vc_tta-panel'})  # テーブルリスト
     content_container, page_info_container = extractInfoFromPanels(
-        panels, content_container, page_info_container, taget_url)
+        panels, content_container, page_info_container, target_url)
     return content_container, page_info_container
 
-
-def extractInfoFromPanels(panels, content_container, page_info_container, taget_url):
-    """from panels html to dict
-
-    Args:
-        panels (_type_): _description_
-        content_container (_type_): _description_
-        page_info_container (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    # 正規表現の準備
-    last_line_checker = re.compile('total|stat')
-    column_fixer = re.compile('[^a-zA-Z0-9]')
+def extractInfoFromPanels(panels, content_container, page_info_container, target_url):
+    def is_validated_url(url):
+        return not bool(re.compile(r'auction.allianceforcoffeeexcellence.org|cdn-cgi').search(url))
+    def is_skip_row(tr, columns):
+        # カラム情報の行かどうか
+        bool1 = (tr.find('td') != None) and (column_fixer(tr.find('td').text) == columns[0])
+        bool2 = (tr.find('th') != None) and (column_fixer(tr.find('th').text) == columns[0])
+        bool3 = (tr.find('td') != None) and (tr.find('td').text == columns[0])
+        bool4 = (tr.find('th') != None) and (tr.find('th').text == columns[0])
+        # 集計行の場合
+        last_line_checker = re.compile('total|stat')
+        bool5 = any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td')))
+        # 空のセルが複数存在する場合
+        bool6 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2
+        return bool1 or bool2 or bool3 or bool4 or bool5 or bool6
+    # panelごとの処理
     for panel in panels:
         # panelのタイトル
         panel_title = panel.find(
             'span', attrs={'class': 'vc_tta-title-text'}).get_text().strip()
-        panel_title = column_fixer.sub('_', blank_fixer(panel_title))
-        # sponsor
+        panel_title = column_fixer(panel_title)
+        # |||sponsor|||
         if 'sponsor' in panel_title.lower():
             if (panel.img is None) and (panel.ul is None):
                 content_container[panel_title] = None
@@ -109,223 +85,125 @@ def extractInfoFromPanels(panels, content_container, page_info_container, taget_
             if panel.ul is not None:
                 content_container[panel_title] = {'li': [{'text': li.text.strip(), 'url': li.a.get('href') if li.a is not None else None}
                                                          for li in panel.find_all('li')]}
-
-        # panelがtableのケース
+        # |||competition, auction, commissions, jury|||
         elif panel.table:
+            # juryのための準備
+            is_jury = "jury" in panel_title.lower()
+            group = None
             # 各パネルの箱と初期値
             content_container[panel_title] = []
-            # 審査員テーブルがあるかどうかのbool, デフォルトはナシ
-            group = None  # juryの属性初期値
-            bool_jury = False
-            # 複数ある場合最初のもので十分
-            table = panel.table
-            # tdにheader情報が存在する場合
-            if table.find('td', attrs={'class': 'mtr-td-tag'}) and not ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
-                # 審査員テーブルが存在する場合
-                if 'jury' in panel_title.lower():
-                    bool_jury = True
-                # １行ごとテーブル内容の処理
-                if table.tbody:
-                    contents = table.tbody
-                else:
-                    contents = table.thead
-                for tr in contents.find_all('tr'):
-                    # １行ごとの箱
-                    row = {}
-                    # jury処理
-                    if bool_jury:
-                        # jury属性であった場合、属性を更新しスキップする
-                        if tr.th:
-                            group = tr.th.text
-                            continue
-                        if group:
-                            row['group'] = group
-                    # 1行目がheader情報の行であればスキップする処理
-                    if tr.find('th'):
-                        if tr.find('th').get('data-mtr-content') == tr.find('th').text:
-                            continue
-                    elif tr.find('td'):
-                        if tr.find('td').get('data-mtr-content') == tr.find('td').text:
-                            continue
-                    # 最終行に特定の条件があればスキップする処理
-                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
-                        continue
-                    # 各セルごとの処理
-                    for td in tr.find_all('td'):
-                        # カラム名取得
-                        column = column_fixer.sub(
-                            '_', blank_fixer(td.get('data-mtr-content')))
-                        # divとして値が設定されている場合
-                        if td.get('data-sheets-value'):
-                            # textとdivの比較し、同じ場合
-                            if td.get('data-sheets-value').strip() == td.text.strip():
-                                row[column] = td.text.strip()
-                            else:
-                                row[column] = {'text': td.text.strip(),
-                                               'value': td.get('data-sheets-value').strip()}
-                        else:
-                            row[column] = td.text.strip()
-                        # URLが存在する場合
-                        if td.a:
-                            individual_url = td.a.get('href')
-                            # 妥当なURLかどうかの確認
-                            if is_validated_url(individual_url):
-                                row['url'] = individual_url
-                                # tableごとにURLが存在したかをチェック
-                                page_info_container['individual_flag'].add(
-                                    panel_title)
-                    # write row
-                    content_container[panel_title].append(row)
-            # theadがあるパターン
-            elif table.thead and not ("nicaragua-2018" in taget_url and "jury" in panel_title.lower()):
-                columns = list(map(lambda x: column_fixer.sub(
-                    '_', blank_fixer(x.text)), table.thead.find('tr').find_all('th')))
-                # 審査員テーブルが存在する場合
-                if 'jury' in panel_title.lower():
-                    bool_jury = True
-                # １行ごとテーブル内容の処理
-                if table.tbody:
-                    contents = table.tbody
-                else:
-                    contents = table.thead
-                for tr in contents.find_all('tr'):
-                    # １行ごとの箱
-                    row = {}
-                    # jury処理
-                    if bool_jury:
-                        # jury属性であった場合、属性を更新しスキップする
-                        if tr.th:
-                            group = tr.th.text.strip()
-                            continue
-                        # 既に属性が保存されている場合、属性を格納する
-                        if group:
-                            row['group'] = group
-                    # 最終行の処理
-                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
-                        continue
-                    # 各セルごとの処理
-                    for column, td in zip(columns, tr.find_all('td')):
-                        row[column] = td.text.strip()
-                        # urlも存在する場合
-                        if td.a:
-                            individual_url = td.a.get('href')
-                            # 妥当なURLかどうかの確認
-                            if is_validated_url(individual_url):
-                                row['url'] = individual_url
-                                # tableごとにURLが存在したかをチェック
-                                page_info_container['individual_flag'].add(
-                                    panel_title)
-                    # write row
-                    content_container[panel_title].append(row)
-
-            # 上記のどちらでもないパターン(Brazil2022, Mexico2018, honduras2018, nicaragu2018-jury)
+            # target_tableの選定
+            if is_jury and "brazil-naturals-2015-january" in target_url.lower():
+                target_table = panel.find("table").table
             else:
-                count = 0
-                # 審査員テーブルが存在する場合
-                if 'jury' in panel_title.lower():
-                    bool_jury = True
-                # １行ごとテーブル内容の処理
-                if table.tbody:
-                    contents = table.tbody
+                target_table = panel.table
+            """ Column処理 """
+            # tableのHTMLタイプをチェック後、column情報の取得
+            # 1.theadが存在する場合
+            if target_table.thead:
+                columns = list(map(lambda x: column_fixer(x.text), target_table.thead.tr.find_all('th')))
+            # 2.tdにcolumn情報が存在する場合
+            elif target_table.find('td', attrs={'class': 'mtr-td-tag'}):
+                columns = list(map(lambda x: column_fixer(x.get('data-mtr-content')), target_table.tr.find_all('td')))
+            # 3.カラムが存在しないhonduras-2018-auctionの処理
+            elif "honduras-2018" in target_url and "auction" in panel_title.lower():
+                columns = ["Rank", "Farm", "Lot_Size", "High_Bid", "Total_Value", "High_Bidder_S_"]
+            # 4.何も情報がない場合、1行目の要素を仮のカラムとする
+            else:
+                columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('td')))
+                if len(columns) == 0:
+                    columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('th')))
+            # 5.irregular
+            if "Selection" in columns or "Week" in columns:
+                print()
+                pass
+            """ contentsの処理 """
+            if panel.table.tbody:
+                target_contents = target_table.tbody
+            else:
+                target_contents = target_table.thead
+            # 行ごとの処理
+            for tr in target_contents.find_all('tr'):
+                # jury属性を持っている場合、属性を更新しスキップする
+                if is_jury and (tr.th or len(tr.find_all('td'))==1):
+                    group = tr.text
+                    continue
+                # スキップ対象のrowかどうかチェック
+                if is_skip_row(tr, columns):
+                    continue
+                # １行ごとの箱の初期化
+                # rowspan設定された行の場合は前の行の箱に保存
+                if "have_rowspan" in locals() and have_rowspan:
+                    # 前の行で保存した値＋今回の行の値に更新
+                    content_container[panel_title][-1][target_column] = content_container[panel_title][-1][target_column] + "+" + tr.td.text.strip()
+                    num_of_row_remains += -1
+                    if num_of_row_remains == 0:
+                        have_rowspan = False
+                    continue
                 else:
-                    contents = table.thead
-                for tr in contents.find_all('tr'):
-                    # カラム名が保存されているはずの1行目の処理
-                    if count == 0 and ("honduras-2018" in taget_url and "auction" in panel_title.lower()):
-                        columns = ["Rank", "Farm", "Lot_Size",
-                                   "High_Bid", "Total_Value", "High_Bidder(s)"]
-                        count += 1
-                        continue
-                    elif count == 0:
-                        columns = list(map(lambda x: column_fixer.sub(
-                            '_', blank_fixer(x.text)), tr.find_all('td')))
-                        count += 1
-                        continue
-                    # rowspan設定された行でない場合、１行ごとの箱を初期化
-                    if "bool_rowspan" in locals():
-                        # 前の行で保存した値＋今回の行の値に更新
-                        content_container[panel_title][-1][target_column] = content_container[panel_title][-1][target_column] + \
-                            "+" + tr.td.text.strip()
-                        num_of_row_remains += -1
+                    row = {}
+                # juryのgroupが設定されている場合
+                if is_jury and group:
+                    row['group'] = group
+                # targetとなるデータのリスト
+                if tr.td:
+                    td_list = tr.find_all('td')
+                else:
+                    td_list = tr.find_all('th')
+                # colspanをもつ場合、tdのリストを修正
+                if any(map(lambda td: td.get('colspan') is not None, td_list)):
+                    row["span"] = "colspan"
+                    target_td_list = []
+                    for td in td_list:
+                        # colspanをもつtdを保存
+                        if td.get('colspan') is not None:
+                            target_td_list.append(td)
+                    for target_td in target_td_list:
+                        num_of_col_remains = int(target_td.get('colspan')) - 1
+                        while num_of_col_remains > 0:
+                            td_list.insert(td_list.index(target_td), target_td)
+                            num_of_col_remains += -1
+                # rowspanの有無チェック
+                have_rowspan = any(map(lambda td: td.get('rowspan') is not None, tr.find_all('td')))
+                # 各セルごとの処理
+                for column, td in zip(columns, td_list):
+                    # rowspan設定が存在する場合、次行で処理するためのフラグ作成
+                    if have_rowspan and td.get('rowspan') is None:
+                        row["span"] = "rowspan"
+                        target_column = column
+                        num_of_row_remains = int(td.parent.select_one("td[rowspan]").get('rowspan')) - 1
+                        # rowspan=1対策
                         if num_of_row_remains == 0:
-                            del bool_rowspan
-                        continue
-                    else:
-                        row = {}
-                    # jury処理
-                    if bool_jury:
-                        # jury属性であった場合、属性を更新しスキップする
-                        if tr.th:
-                            group = tr.th.text.strip()
-                            continue
-                        # 既に属性が保存されている場合、属性を格納する
-                        if group:
-                            row['group'] = group
-                    # 最終行の処理
-                    if any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) or list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2:
-                        continue
-                    # 通常行
-                    if not any(map(lambda td: (td.get('colspan') is not None) or (td.get('rowspan') is not None), tr.find_all('td'))):
-                        # 各セルごとの処理
-                        for column, td in zip(columns, tr.find_all('td')):
-                            row[column] = td.text.strip()
-                            # urlも存在する場合
-                            if td.a:
-                                individual_url = td.a.get('href')
-                                # 妥当なURLかどうかの確認
-                                if is_validated_url(individual_url):
-                                    row['url'] = individual_url
-                                    # tableごとにURLが存在したかをチェック
-                                    page_info_container['individual_flag'].add(panel_title)
-                    # span設定行
-                    else:
-                        have_colspan = any(map(lambda td: td.get(
-                            'colspan') is not None, tr.find_all('td')))
-                        have_rowspan = any(map(lambda td: td.get(
-                            'rowspan') is not None, tr.find_all('td')))
-                        # 各セルごとの処理
-                        for column, td in zip(columns, tr.find_all('td')):
-                            # イレギュラーセルの処理(colは存在すれば、rowは存在しなければイレギュラー)
-                            # colspan設定が存在する場合、次セルで処理
-                            if have_colspan and td.get('colspan') is not None:
-                                target_value = td.text.strip()
-                                bool_colspan = True
-                                num_of_col_remains = int(td.get('colspan')) - 1
-                                row[column] = td.text.strip()
-                            # rowspan設定が存在する場合、次行で処理
-                            elif have_rowspan and td.get('rowspan') is None:
-                                target_column = column
-                                bool_rowspan = True
-                                num_of_row_remains = int(td.parent.select_one(
-                                    "td[rowspan]").get('rowspan')) - 1
-                                row[column] = td.text.strip()
-                            # 通常セルの処理
-                            else:
-                                # colspan設定されていた場合は該当セルの値を保存
-                                if "bool_colspan" in locals():
-                                    row[column] = target_value
-                                    num_of_col_remains += -1
-                                    if num_of_col_remains == 0:
-                                        del bool_colspan
-                                else:
-                                    row[column] = td.text.strip()
-                            # urlも存在する場合
-                            if td.a:
-                                individual_url = td.a.get('href')
-                                # 妥当なURLかどうかの確認
-                                if is_validated_url(individual_url):
-                                    row['url'] = individual_url
-                                    # tableごとにURLが存在したかをチェック
-                                    page_info_container['individual_flag'].add(panel_title)
-                        # 初期化
-                        del have_colspan
-                        del have_rowspan
-                    # write row
-                    content_container[panel_title].append(row)
+                            have_rowspan = False
+                    # 値の保存
+                    row[column] = td.text.strip()
+                    # urlも存在する場合
+                    if td.a:
+                        individual_url = td.a.get('href')
+                        # 妥当なURLかどうかの確認
+                        if is_validated_url(individual_url):
+                            row['url'] = individual_url
+                            # tableごとにURLが存在したかをチェック
+                            page_info_container['individual_flag'].add(panel_title)
+                # write row
+                content_container[panel_title].append(row)
     return content_container, page_info_container
 
-
 def extractInfoFromIndividuals(contents, url):
+    def chooseBestLink(a):
+        d = re.compile(r'\s\d+w')
+        s = re.compile(r'\s|w')
+        linklist = a.split(',')
+        if len(linklist) == 1:
+            return a
+        resolutions = [int(s.sub('', d.search(l).group()))
+                    for l in linklist]
+        maxindex = resolutions.index(max(resolutions))
+        links = d.sub('', linklist[maxindex].strip())
+        if len(links) == 0:
+            return None
+        else:
+            return links
     individual_result = {}
     soup = BeautifulSoup(contents, 'lxml')
     if ('cupofexcellence.org/directory' in url) or ('allianceforcoffeeexcellence.org/farm-directory' in url) or ('allianceforcoffeeexcellence.org/directory' in url):
@@ -353,11 +231,10 @@ def extractInfoFromIndividuals(contents, url):
                 li.text.strip() for li in description[0].find_all('li')]
 
         # detail
-        schema_fixer = re.compile('[^a-zA-Z0-9]')
         details = soup.select('#listing-details tr')
         individual_table = {}
         for tr in details:
-            individual_table[schema_fixer.sub('_', tr.th.text)] = tr.td.text
+            individual_table[column_fixer(tr.th.text)] = tr.td.text
         individual_result['detail'] = individual_table
         return individual_result
 
