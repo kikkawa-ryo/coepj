@@ -35,7 +35,7 @@ def check_and_get_additional_url(parse_target):
 def column_fixer(text):
     text = re.sub('[^a-zA-Z0-9]', '_', text.strip()).strip()
     text = re.sub('\s{2,}', ' ', text.strip()).strip()
-    text = re.sub('_{2,}', ' ', text.strip()).strip()
+    text = re.sub('_{2,}', '_', text.strip()).strip()
     text = text.casefold().title()
     return text
 
@@ -57,17 +57,18 @@ def scrapingPage(parse_target, content_container, page_info_container, target_ur
 def extractInfoFromPanels(panels, content_container, page_info_container, target_url):
     def is_validated_url(url):
         return not bool(re.compile(r'auction.allianceforcoffeeexcellence.org|cdn-cgi').search(url))
-    def is_first_row(tr, columns):
+    def is_skip_row(tr, columns):
         # カラム情報の行かどうか
-        bool1 = (tr.find('td') != None) and (tr.find('td').get('data-mtr-content') == columns[0])
-        bool2 = (tr.find('th') != None) and (tr.find('th').get('data-mtr-content') == columns[0])
-        bool3 = column_fixer(tr.find('td').text) == columns[0]
-        return bool1 or bool2 or bool3
-    def is_last_row(tr):
+        bool1 = (tr.find('td') != None) and (column_fixer(tr.find('td').text) == columns[0])
+        bool2 = (tr.find('th') != None) and (column_fixer(tr.find('th').text) == columns[0])
+        bool3 = (tr.find('td') != None) and (tr.find('td').text == columns[0])
+        bool4 = (tr.find('th') != None) and (tr.find('th').text == columns[0])
+        # 集計行の場合
         last_line_checker = re.compile('total|stat')
-        bool1 = any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td'))) # 集計行の場合
-        bool2 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2 #　空のセルが複数存在する場合
-        return bool1 or bool2
+        bool5 = any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td')))
+        # 空のセルが複数存在する場合
+        bool6 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2
+        return bool1 or bool2 or bool3 or bool4 or bool5 or bool6
     # panelごとの処理
     for panel in panels:
         # panelのタイトル
@@ -84,62 +85,18 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
             if panel.ul is not None:
                 content_container[panel_title] = {'li': [{'text': li.text.strip(), 'url': li.a.get('href') if li.a is not None else None}
                                                          for li in panel.find_all('li')]}
-        # |||jury|||
-        elif "jury" in panel_title.lower():
+        # |||competition, auction, commissions, jury|||
+        elif panel.table:
+            # juryのための準備
+            is_jury = "jury" in panel_title.lower()
+            group = None
             # 各パネルの箱と初期値
             content_container[panel_title] = []
-            group = None
             # target_tableの選定
-            if "brazil-naturals-2015-january" in target_url.lower():
+            if is_jury and "brazil-naturals-2015-january" in target_url.lower():
                 target_table = panel.find("table").table
             else:
                 target_table = panel.table
-            """ Column処理 """
-            # tableのHTMLタイプをチェック後、column情報の取得
-            # 1.theadが存在する場合
-            if target_table.thead:
-                columns = list(map(lambda x: column_fixer(x.text), target_table.thead.tr.find_all('th')))
-            # 2.tdにcolumn情報が存在する場合
-            elif target_table.find('td', attrs={'class': 'mtr-td-tag'}):
-                columns = list(map(lambda x: column_fixer(x.get('data-mtr-content')), target_table.tr.find_all('td')))
-            # 3.何も情報がない場合、1行目の要素を仮のカラムとする
-            else:
-                columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('td')))
-            if "Selection" in columns or "Week" in columns:
-                print()
-                pass
-            """ contentsの処理 """
-            if panel.table.tbody:
-                target_contents = target_table.tbody
-            else:
-                target_contents = target_table.thead
-            for tr in target_contents.find_all('tr'):
-                # jury属性を持っている場合、属性を更新しスキップする
-                if tr.th:
-                    # colspan設定されがちなので、初期
-                    group = tr.th.text
-                    continue
-                # 1行目がcolumnsの内容と一致する場合スキップ
-                if is_first_row(tr, columns):
-                    continue
-                # 最終行に特定の条件があればスキップする処理
-                if is_last_row(tr):
-                    continue
-                # １行ごとの箱
-                row = {}
-                if group:
-                    row['group'] = group
-                # 各セルごとの処理
-                for column, td in zip(columns, tr.find_all('td')):
-                    row[column] = td.text.strip()
-                # write row
-                content_container[panel_title].append(row)
-        # |||competition, auction, commissions|||
-        elif panel.table:
-            # 各パネルの箱と初期値
-            content_container[panel_title] = []
-            # target_tableの選定
-            target_table = panel.table
             """ Column処理 """
             # tableのHTMLタイプをチェック後、column情報の取得
             # 1.theadが存在する場合
@@ -154,7 +111,12 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
             # 4.何も情報がない場合、1行目の要素を仮のカラムとする
             else:
                 columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('td')))
-                # columns = []
+                if len(columns) == 0:
+                    columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('th')))
+            # 5.irregular
+            if "Selection" in columns or "Week" in columns:
+                print()
+                pass
             """ contentsの処理 """
             if panel.table.tbody:
                 target_contents = target_table.tbody
@@ -162,11 +124,12 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
                 target_contents = target_table.thead
             # 行ごとの処理
             for tr in target_contents.find_all('tr'):
-                # 1行目がcolumnsの内容と一致する場合スキップ()
-                if is_first_row(tr, columns):
+                # jury属性を持っている場合、属性を更新しスキップする
+                if is_jury and (tr.th or len(tr.find_all('td'))==1):
+                    group = tr.text
                     continue
-                # 最終行に特定の条件があればスキップする処理
-                if is_last_row(tr):
+                # スキップ対象のrowかどうかチェック
+                if is_skip_row(tr, columns):
                     continue
                 # １行ごとの箱の初期化
                 # rowspan設定された行の場合は前の行の箱に保存
@@ -179,8 +142,14 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
                     continue
                 else:
                     row = {}
+                # juryのgroupが設定されている場合
+                if is_jury and group:
+                    row['group'] = group
                 # targetとなるデータのリスト
-                td_list = tr.find_all('td')
+                if tr.td:
+                    td_list = tr.find_all('td')
+                else:
+                    td_list = tr.find_all('th')
                 # colspanをもつ場合、tdのリストを修正
                 if any(map(lambda td: td.get('colspan') is not None, td_list)):
                     row["span"] = "colspan"
@@ -203,6 +172,9 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
                         row["span"] = "rowspan"
                         target_column = column
                         num_of_row_remains = int(td.parent.select_one("td[rowspan]").get('rowspan')) - 1
+                        # rowspan=1対策
+                        if num_of_row_remains == 0:
+                            have_rowspan = False
                     # 値の保存
                     row[column] = td.text.strip()
                     # urlも存在する場合

@@ -15,7 +15,7 @@ def get_result_urls(url):
 
 
 def get_response_by_my_requsest(url):
-    time.sleep(7)
+    time.sleep(3)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'})
     return response.content
 
@@ -56,7 +56,7 @@ class Crawler:
             for table_name in list(individual_column_list):
                 for i, row in enumerate(self.contents[table_name]):
                     # 既に訪れたことのあるURLかチェック
-                    if row['url'] not in self.page_info['individual_unique_links']:
+                    if 'url' in row and row['url'] not in self.page_info['individual_unique_links']:
                         # 初めて訪れたURLとして保存
                         self.page_info['individual_unique_links'].add(row['url'])
                         print(row['url'])
