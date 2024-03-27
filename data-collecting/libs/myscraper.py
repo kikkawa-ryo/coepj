@@ -99,21 +99,24 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
                 target_table = panel.table
             """ Column処理 """
             # tableのHTMLタイプをチェック後、column情報の取得
-            # 1.theadが存在する場合
-            if target_table.thead:
+            # 1.カラムが存在しないhonduras-2018-auctionの処理
+            if "honduras-2018" in target_url and "auction" in panel_title.lower():
+                columns = ["Rank", "Farm", "Lot_Size", "High_Bid", "Total_Value", "High_Bidder_S_"]
+            # 2.カラムが存在しないnational-juryの処理
+            elif "national_jury" in panel_title.lower() and re.sub("https:\/\/(.+?)\/(.+?)\/", r"\2", target_url) in ["brazil-2021", "colombia-2020", "colombia-2021", "ethiopia-2022", "honduras-2018"]:
+                columns = ["Name", "Company"]
+            # 3.theadが存在する場合
+            elif target_table.thead:
                 columns = list(map(lambda x: column_fixer(x.text), target_table.thead.tr.find_all('th')))
-            # 2.tdにcolumn情報が存在する場合
+            # 4.tdにcolumn情報が存在する場合
             elif target_table.find('td', attrs={'class': 'mtr-td-tag'}):
                 columns = list(map(lambda x: column_fixer(x.get('data-mtr-content')), target_table.tr.find_all('td')))
-            # 3.カラムが存在しないhonduras-2018-auctionの処理
-            elif "honduras-2018" in target_url and "auction" in panel_title.lower():
-                columns = ["Rank", "Farm", "Lot_Size", "High_Bid", "Total_Value", "High_Bidder_S_"]
-            # 4.何も情報がない場合、1行目の要素を仮のカラムとする
+            # 5.何も情報がない場合、1行目の要素を仮のカラムとする
             else:
                 columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('td')))
                 if len(columns) == 0:
                     columns = list(map(lambda x: column_fixer(x.text), target_table.tr.find_all('th')))
-            # 5.irregular
+            # 6.irregular
             if "Selection" in columns or "Week" in columns:
                 print()
                 pass
