@@ -12,3 +12,13 @@ coffee_house:
       threads: 5
       type: bigquery
   target: dev
+
+elementary:
+  outputs:
+    default:
+      type: "bigquery"
+      project: "coffee-research"
+      dataset: "coffee_house_elementary"
+      method: service-account
+      keyfile: credential/coffee-research-dee4cd5aed7e.json
+      threads: 5

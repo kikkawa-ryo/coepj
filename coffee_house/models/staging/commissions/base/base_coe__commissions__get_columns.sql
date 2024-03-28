@@ -4,9 +4,7 @@
 
 with
 
-flatten_table as (
-    select *, from {{ ref('base_coe__auction_results__flatten') }}
-),
+flatten_table as (select *, from {{ ref('base_coe__commissions__flatten') }}),
 
 get_columns as (
     select
@@ -15,27 +13,29 @@ get_columns as (
         year,
         program,
         award_category,
-        {%- set columns_info = get_auction_results_columns() %}
+        -- エイリアスとカラム名のペアをマクロで取得する
+        {%- set columns_info = get_commissions_columns() %}
+        -- カラムの名寄せを行う
         {%- for columns_dict in columns_info.table %}
             case
                 {%- for column in columns_dict.columns %}
-                    when coe_auciton_result.{{ column }}.text is not null
+                    when commissions.{{ column }}.text is not null
                         then
                             json_extract_scalar(
-                                coe_auciton_result.{{ column }}, "$.text"
+                                commissions.{{ column }}, "$.text"
                             )
-                    when coe_auciton_result.{{ column }} is not null
+                    when commissions.{{ column }} is not null
                         then
                             json_extract_scalar(
-                                coe_auciton_result, "{{ '$.'~column }}"
+                                commissions, "{{ '$.'~column }}"
                             )
                 {%- endfor %}
                 else null
             end as {{ columns_dict.alias }}
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
-        coe_auciton_result.url,
-        coe_auciton_result.individual_result,
+        commissions.url,
+        commissions.individual_result,
     from flatten_table
 )
 

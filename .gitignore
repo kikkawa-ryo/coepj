@@ -9,6 +9,7 @@ __pycache__/
 venv/
 logs/
 credential/
+tmp/
 
 data-collecting/config/credential
 data-collecting/data/tmp.csv

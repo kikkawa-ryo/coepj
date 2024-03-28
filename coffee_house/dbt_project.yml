@@ -32,9 +32,16 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   coffee_house:
+    +dbt-osmosis: "{model}.yml"
+    base:
+      +materialized: view
     staging:
       +materialized: view
       # coe_results:
       #   +materialized: ephemeral
       #   base:
       #     +materialized: ephemeral
+models:
+  elementary:
+    ## elementary models will be created in the schema '<your_schema>_elementary'
+    +schema: "elementary"

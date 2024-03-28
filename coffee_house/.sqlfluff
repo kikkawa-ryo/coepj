@@ -1,0 +1,22 @@
+[sqlfluff]
+dialect = bigquery
+templater = dbt
+
+[sqlfluff:templater:dbt]
+; project_dir = ./
+; profiles_dir = ./
+profile = coffee_house
+target = dev 
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = False
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:convention.select_trailing_comma]
+select_clause_trailing_comma = require
+

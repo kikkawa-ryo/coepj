@@ -2,23 +2,23 @@ with
 
 source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
-coe_competition_results as (
+nw_competition_results as (
     select
         program_url,
         year,
         program,
-        "coe" as award_category,
+        "nw" as award_category,
         case
-            {% set columns = ["COE_Competition_Results", "Coe_Competition_Results", "Winning_Farms", "Winning_Farms_"] %}
+            {% set columns = ["NW_Competition_Results", "Nw_Competition_Results", "National_Winners", "National_Winners_"] %}
             {% for column in columns %}
                 when
                     contents.{{ column }} is not null
                     then contents.{{ column }}
             {% endfor %}
             else null
-        end as coe_competition_results_array
+        end as nw_competition_results_array
     from source
 )
 
 select *,
-from coe_competition_results
+from nw_competition_results
