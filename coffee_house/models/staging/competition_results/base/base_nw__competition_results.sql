@@ -1,27 +1,24 @@
-{{
-  config(
-    materialized='view'
-  )
-}}
-
 with
 
 source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
-commissions as (
+nw_competition_results as (
     select
-        url,
+        program_url,
+        year,
+        program,
+        "nw" as award_category,
         case
-            {% set columns = ["Auction_Commissions", "Organizing_Country_Commissions"] %}
+            {% set columns = ["NW_Competition_Results", "Nw_Competition_Results", "National_Winners", "National_Winners_"] %}
             {% for column in columns %}
                 when
                     contents.{{ column }} is not null
                     then contents.{{ column }}
             {% endfor %}
             else null
-        end as commissions_array
+        end as nw_competition_results_array
     from source
 )
 
 select *,
-from commissions
+from nw_competition_results

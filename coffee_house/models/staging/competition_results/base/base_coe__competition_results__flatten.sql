@@ -6,7 +6,10 @@ flatten_table as (
     select
         0 as is_fixed,
         offset,
-        url,
+        year,
+        program,
+        award_category,
+        program_url,
         coe_competition_result,
     from
         source,
@@ -28,15 +31,16 @@ concat_table as (
 filtered_table as (
     select
         offset,
-        url as program_url,
+        year,
+        program,
+        award_category,
         coe_competition_result,
-        concat(regexp_extract(url, r'https://.+?/(.+)/'), '_', offset) as id,
-        regexp_extract(url, r'https://.+?/.*(\d{4}).*/') as year,
+        concat(program, '_', award_category, "_", offset) as id,
     from concat_table
     -- 修正前データを削除
-    qualify rank() over (partition by offset, url order by is_fixed desc) = 1
+    qualify rank() over (partition by offset, program_url order by is_fixed desc) = 1
     order by
-        url,
+        program_url,
         offset
 )
 

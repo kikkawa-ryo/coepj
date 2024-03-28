@@ -6,5 +6,8 @@ seeds:
       column_types:
         is_fixed: INTEGER
         OFFSET: INTEGER
+        year: INTEGER
+        program: STRING
+        award_category: STRING
         url: STRING
         coe_competition_result: JSON
