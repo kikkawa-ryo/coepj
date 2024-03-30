@@ -154,7 +154,9 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
                 else:
                     td_list = tr.find_all('th')
                 # colspanをもつ場合、tdのリストを修正
-                if any(map(lambda td: td.get('colspan') is not None, td_list)):
+                if "honduras-2018" in target_url and "commission" in panel_title.lower():
+                    td_list =list(filter(lambda td: td.text!="", td_list))
+                elif any(map(lambda td: td.get('colspan') is not None, td_list)):
                     row["span"] = "colspan"
                     target_td_list = []
                     for td in td_list:
