@@ -4,6 +4,8 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 coe_auciton_results as (
     select
+        program_url,
+        country,
         year,
         program,
         "coe" as award_category,

@@ -4,6 +4,7 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 nw_auciton_results as (
     select
+        country,
         year,
         program,
         "nw" as award_category,
