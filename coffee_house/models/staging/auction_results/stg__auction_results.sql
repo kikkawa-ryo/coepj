@@ -36,6 +36,7 @@ final as (
         high_bidder,
         buyer_location,
         PARSE_NUMERIC(score) as score,
+        span,
         url,
         individual_result,
      from auciton_results

@@ -31,6 +31,7 @@ get_columns as (
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
         if(coe_auciton_result.Weight_Kg_ is not null, "kg", "lb") as weight_unit,
+        coe_auciton_result.span,
         coe_auciton_result.url,
         coe_auciton_result.individual_result,
     from flatten_table
