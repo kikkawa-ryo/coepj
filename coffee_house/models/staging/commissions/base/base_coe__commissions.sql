@@ -4,6 +4,7 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 commissions as (
     select
+        country,
         year,
         program,
         "coe" as award_category,

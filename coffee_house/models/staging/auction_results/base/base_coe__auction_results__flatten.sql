@@ -5,6 +5,7 @@ source as (select *, from {{ ref('base_coe__auction_results') }}),
 flatten_table as (
     select
         offset,
+        country,
         year,
         program,
         award_category,
