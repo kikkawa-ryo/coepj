@@ -10,6 +10,11 @@ deduplicated as (
         url as program_url,
         cast(regexp_extract(url, r"https://.+?/.*(\d{4}).*/") as int) as year,
         case
+            when regexp_contains(url, "costa-rica") then "costa-rica"
+            when regexp_contains(url, "el-salvador") then "el-salvador"
+            else regexp_extract(url, r"https://.+?/(\w+)-?.*-\d+-?.+?/")
+        end as country,
+        case
             when
                 regexp_contains(url, "/costa-rica-coe-2017/")
                 then "costa-rica-2017"
@@ -26,6 +31,7 @@ deduplicated as (
 final as (
     select
         program_url,
+        country,
         year,
         program,
         parse_json(normalize(to_json_string(src.contents), nfkc)) as contents,
