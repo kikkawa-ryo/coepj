@@ -32,8 +32,8 @@ get_columns as (
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
         if(nw_auciton_result.Weight_Kg_ is not null, "kg", "lb") as weight_unit,
-        nw_auciton_result.span,
-        nw_auciton_result.url,
+        json_extract_scalar(nw_auciton_result, "$.span") as span,
+        json_extract_scalar(nw_auciton_result, "$.url") as url,
         nw_auciton_result.individual_result,
     from flatten_table
 )

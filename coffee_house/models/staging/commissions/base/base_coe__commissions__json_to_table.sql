@@ -28,8 +28,8 @@ get_columns as (
             end as {{ columns_dict.alias }}
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
-        commissions.span,
-        commissions.url,
+        json_extract_scalar(commissions, "$.span") as span,
+        json_extract_scalar(commissions, "$.url") as url,
         commissions.individual_result,
     from flatten_table
 )

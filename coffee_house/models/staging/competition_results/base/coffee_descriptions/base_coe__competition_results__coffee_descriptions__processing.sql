@@ -5,7 +5,7 @@
 with
 
 raw_table as (
-    select *, from {{ ref("base_coe__competition_results__get_columns") }}
+    select *, from {{ ref("base_coe__competition_results__json_to_table") }}
 ),
 
 pre_processing_0 as (

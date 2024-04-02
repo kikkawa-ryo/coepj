@@ -6,10 +6,10 @@ flatten_table as (
     select
         0 as is_fixed,
         offset,
+        country,
         year,
         program,
         award_category,
-        program_url,
         coe_competition_result,
     from
         source,
@@ -31,6 +31,7 @@ concat_table as (
 filtered_table as (
     select
         offset,
+        country,
         year,
         program,
         award_category,
@@ -38,9 +39,9 @@ filtered_table as (
         concat(program, '_', award_category, "_", offset) as id,
     from concat_table
     -- 修正前データを削除
-    qualify rank() over (partition by offset, program_url order by is_fixed desc) = 1
+    qualify rank() over (partition by offset, program order by is_fixed desc) = 1
     order by
-        program_url,
+        program,
         offset
 )
 
