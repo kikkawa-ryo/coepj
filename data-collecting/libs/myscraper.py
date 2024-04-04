@@ -67,8 +67,8 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
         last_line_checker = re.compile('totals?:|stats?:|\btotals?\b|\bstats?\b')
         bool5 = any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td')))
         # 空のセルが複数存在する場合
-        bool6 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2
-        return bool1 or bool2 or bool3 or bool4 or bool5 or bool6
+        # bool6 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2
+        return bool1 or bool2 or bool3 or bool4 or bool5
     # panelごとの処理
     for panel in panels:
         # panelのタイトル
