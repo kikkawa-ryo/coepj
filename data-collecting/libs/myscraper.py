@@ -64,7 +64,7 @@ def extractInfoFromPanels(panels, content_container, page_info_container, target
         bool3 = (tr.find('td') != None) and (tr.find('td').text == columns[0])
         bool4 = (tr.find('th') != None) and (tr.find('th').text == columns[0])
         # 集計行の場合
-        last_line_checker = re.compile('totals?:|stats?:|\btotals?\b|\bstats?\b')
+        last_line_checker = re.compile('totals?:|stats?:|\\btotals?\\b|\\bstats?\\b')
         bool5 = any(map(lambda s: bool(last_line_checker.search(s.text.lower())), tr.find_all('td')))
         # 空のセルが複数存在する場合
         # bool6 = list(map(lambda s: s.text.lower(), tr.find_all('td'))).count('') >= 2
