@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_results_joined
+    # tests:
+    #   - dbt_utils.equal_rowcount:
+    #       compare_model: ref('stg__competition_results')
+  - name: int_results_segment_majority
+    config:
+      materialized: ephemeral
+  - name: int_results_segment_more_auction_than_competition
+    config:
+      materialized: ephemeral
+  - name: int_results_segment_more_competition_than_auction_and_not_have_rank
+    config:
+      materialized: ephemeral
+  - name: int_results_segment_more_competition_than_auction
+    config:
+      materialized: ephemeral
+  - name: int_results_segmenting_for_join
+    config:
+      materialized: ephemeral

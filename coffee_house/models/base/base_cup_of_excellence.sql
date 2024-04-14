@@ -6,6 +6,15 @@ with
 source as (select *, from {{ source('staging', 'cup_of_excellence') }}),
 
 deduplicated as (
+{{ dbt_utils.deduplicate(
+    relation='source',
+    partition_by='url',
+    order_by='url',
+   )
+}}
+),
+
+final as (
     select
         url as program_url,
         cast(regexp_extract(url, r"https://.+?/.*(\d{4}).*/") as int) as year,
@@ -23,19 +32,8 @@ deduplicated as (
                 then "brazil-naturals-december-2015"
             else regexp_extract(url, r"https://.+?/(.+)/")
         end as program,
-        array_agg(src order by src.url desc limit 1)[offset(0)] as src,
-    from source as src
-    group by url
-),
-
-final as (
-    select
-        program_url,
-        country,
-        year,
-        program,
-        parse_json(normalize(to_json_string(src.contents), nfkc)) as contents,
-        parse_json(normalize(to_json_string(src.page_info), nfkc)) as page_info,
+        parse_json(normalize(to_json_string(contents), nfkc)) as contents,
+        parse_json(normalize(to_json_string(page_info), nfkc)) as page_info,
     from
         deduplicated
 )

@@ -36,10 +36,10 @@ filtered_table as (
         program,
         award_category,
         coe_competition_result,
-        concat(program, '_', award_category, "_", offset) as id,
     from concat_table
     -- 修正前データを削除
-    qualify rank() over (partition by offset, program order by is_fixed desc) = 1
+    qualify
+        rank() over (partition by offset, program order by is_fixed desc) = 1
     order by
         program,
         offset

@@ -7,7 +7,7 @@ renamed as (
         program_url,
         year,
         program,
-        page_info.program prg,
+        page_info.program as prg,
         page_info.remarks,
         page_info.individual_flag,
         page_info.individual_unique_links,

@@ -6,7 +6,6 @@ flatten_table as (
 
 get_columns as (
     select
-        id,
         offset,
         country,
         year,

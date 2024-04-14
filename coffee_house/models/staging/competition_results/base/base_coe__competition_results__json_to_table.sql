@@ -4,9 +4,8 @@ flatten_table as (
     select *, from {{ ref('base_coe__competition_results__flatten') }}
 ),
 
-get_columns as (
+expanded_table as (
     select
-        id,
         offset,
         country,
         year,
@@ -31,45 +30,42 @@ get_columns as (
         coe_competition_result.individual_result,
         -- カラム名の情報をフラグ化して引き継ぐ
         case
-            when coe_competition_result.FARM___CWS is not null
+            when coe_competition_result.farm___cws is not null
                 then true
-            when coe_competition_result.Farm_Cws is not null
+            when coe_competition_result.farm_cws is not null
                 then true
-            when coe_competition_result.Farm___CWS is not null
+            when coe_competition_result.farm___cws is not null
                 then true
             else false
         end as is_cws,
         case
-            when coe_competition_result.Farmer_Organization is not null
+            when coe_competition_result.farmer_organization is not null
                 then "organization"
-            when coe_competition_result.Farmer_Representative is not null
+            when coe_competition_result.farmer_representative is not null
                 then "representative"
-            when coe_competition_result.Farmer___Representative is not null
+            when coe_competition_result.farmer___representative is not null
                 then "representative"
-            when coe_competition_result.Owner is not null
+            when coe_competition_result.owner is not null
                 then "owner"
-            when coe_competition_result.PRODUCER is not null
+            when coe_competition_result.producer is not null
                 then "producer"
-            when coe_competition_result.Producer is not null
+            when coe_competition_result.producer is not null
                 then "producer"
-            else null
         end as farmer_type,
         case
-            when coe_competition_result.Size_30Kg_Boxes_ is not null
+            when coe_competition_result.size_30kg_boxes_ is not null
                 then "30kg"
-            else null
         end as size_type,
         case
-            when coe_competition_result.Weight_Kg_ is not null
+            when coe_competition_result.weight_kg_ is not null
                 then "kg"
-            when coe_competition_result.Weight_Lbs is not null
+            when coe_competition_result.weight_lbs is not null
                 then "lb"
-            when coe_competition_result.Weight_Lbs_ is not null
+            when coe_competition_result.weight_lbs_ is not null
                 then "lb"
-            else null
         end as weight_unit,
     from flatten_table
 )
 
 select *,
-from get_columns
+from expanded_table

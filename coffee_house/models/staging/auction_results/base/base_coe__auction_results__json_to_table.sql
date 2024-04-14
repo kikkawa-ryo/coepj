@@ -10,7 +10,6 @@ flatten_table as (
 
 get_columns as (
     select
-        id,
         offset,
         country,
         year,
@@ -30,7 +29,8 @@ get_columns as (
             end as {{ columns_dict.alias }}
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
-        if(coe_auciton_result.Weight_Kg_ is not null, "kg", "lb") as weight_unit,
+        if(coe_auciton_result.weight_kg_ is not null, "kg", "lb")
+            as weight_unit,
         json_extract_scalar(coe_auciton_result, "$.span") as span,
         json_extract_scalar(coe_auciton_result, "$.url") as url,
         coe_auciton_result.individual_result,

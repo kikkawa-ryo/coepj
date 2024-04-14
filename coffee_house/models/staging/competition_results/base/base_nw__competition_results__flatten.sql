@@ -10,7 +10,6 @@ flatten_table as (
         program,
         award_category,
         nw_competition_result,
-        concat(program, '_', award_category, "_", offset) as id,
     from
         source,
         unnest(

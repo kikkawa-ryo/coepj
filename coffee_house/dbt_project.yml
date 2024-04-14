@@ -35,8 +35,11 @@ models:
     +dbt-osmosis: "{model}.yml"
     base:
       +materialized: view
+    intermediate:
+      +materialized: ephemeral
     staging:
       +materialized: view
+    
       # coe_results:
       #   +materialized: ephemeral
       #   base:

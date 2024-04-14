@@ -6,9 +6,8 @@ with
 
 flatten_table as (select *, from {{ ref('base_coe__commissions__flatten') }}),
 
-get_columns as (
+expanded_table as (
     select
-        id,
         offset,
         country,
         year,
@@ -35,4 +34,4 @@ get_columns as (
 )
 
 select *,
-from get_columns
+from expanded_table
