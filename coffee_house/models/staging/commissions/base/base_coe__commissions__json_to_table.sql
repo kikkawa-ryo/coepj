@@ -27,6 +27,7 @@ expanded_table as (
             end as {{ columns_dict.alias }}
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
+        if(commissions.weight_kg_ is not null, "kg", "lb")as weight_unit,
         json_extract_scalar(commissions, "$.span") as span,
         json_extract_scalar(commissions, "$.url") as url,
         commissions.individual_result,

@@ -54,11 +54,16 @@ commissions_processed as (
 
 final as (
     select
+        id_offset,
+        id_rank,
         offset,
         country,
         year,
         program,
         award_category,
+        rank,
+        cast(rank_no as INT64) as rank_no,
+        rank_cd,
         farm_cws,
         farmer,
         cast(lot_size as INT64) as lot_size,
@@ -66,22 +71,14 @@ final as (
         span,
         url,
         individual_result,
-        concat(program, '_', award_category, '_', offset) as id_offset,
-        concat(
-            program,
-            '_',
-            award_category,
-            '_',
-            lower(regexp_replace(lot_number, r'T|\s', ''))
-        ) as id_rank,
-        lower(regexp_replace(lot_number, r'T|\s', '')) as rank,
-        regexp_substr(lower(regexp_replace(lot_number, r'T|\s', '')), r'\d')
-            as rank_no,
-        regexp_substr(lower(regexp_replace(lot_number, r'T|\s', '')), r'\D')
-            as rank_cd,
-        parse_numeric(regexp_replace(weight, r'lbs', '')) as weight_lb,
-        parse_numeric(regexp_replace(weight, r'lbs', ''))
-        * 0.453592 as weight_kg,
+        case
+            when weight_unit = 'kg' then parse_numeric(weight) * 2.20462
+            else parse_numeric(weight)
+        end as weight_lb,
+        case
+            when weight_unit = 'lb' then parse_numeric(weight) * 0.453592
+            else parse_numeric(weight)
+        end as weight_kg,
         parse_numeric(total_value) as total_value,
         parse_numeric(high_bid) as high_bid,
         parse_numeric(commission) as commission,
