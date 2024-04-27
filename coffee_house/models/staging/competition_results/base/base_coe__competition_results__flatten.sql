@@ -25,7 +25,7 @@ concat_table as (
     from flatten_table
     union all
     select *,
-    from {{ ref('seed_coe__competition_results__fixed_data') }}
+    from {{ ref('seed__coe_competition_results__fixed_data') }}
 ),
 
 filtered_table as (

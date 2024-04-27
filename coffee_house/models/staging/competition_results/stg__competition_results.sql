@@ -27,8 +27,8 @@ competition_results_processed as (
         program,
         award_category,
         score,
-        farm_cws,
-        farmer,
+        regexp_replace(NORMALIZE_AND_CASEFOLD(farm_cws, NFKC), r"{.+}|\(?\d{4}\)?", "") as farm_cws,
+        regexp_replace(NORMALIZE_AND_CASEFOLD(farmer, NFKC), r"{.+}|\(?\d{4}\)?", "") as farmer,
         variety,
         process,
         region,
@@ -129,12 +129,12 @@ final as (
         individual_result,
         parse_numeric(score) as score,
         case
-            when weight_unit = 'kg' then parse_numeric(weight) * 2.20462
-            else parse_numeric(weight)
+            when weight_unit = 'lb' then parse_numeric(weight)
+            else parse_numeric(weight) * 2.20462
         end as weight_lb,
         case
-            when weight_unit = 'lb' then parse_numeric(weight) * 0.453592
-            else parse_numeric(weight)
+            when weight_unit = 'kg' then parse_numeric(weight)
+            else parse_numeric(weight) * 0.453592
         end as weight_kg,
     from competition_results_processed
 )

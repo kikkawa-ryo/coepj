@@ -14,7 +14,7 @@ deduplicated as (
 }}
 ),
 
-final as (
+processed as (
     select
         url as program_url,
         cast(regexp_extract(url, r"https://.+?/.*(\d{4}).*/") as int) as year,
@@ -32,10 +32,47 @@ final as (
                 then "brazil-naturals-december-2015"
             else regexp_extract(url, r"https://.+?/(.+)/")
         end as program,
-        parse_json(normalize(to_json_string(contents), nfkc)) as contents,
-        parse_json(normalize(to_json_string(page_info), nfkc)) as page_info,
+        normalize(to_json_string(contents), nfkc) as contents,
+        normalize(to_json_string(page_info), nfkc) as page_info,
     from
         deduplicated
+),
+
+replace_blank as (
+    select
+        program_url,
+        year,
+        country,
+        program,
+        regexp_replace(contents, r"\s+", " ") as contents,
+        regexp_replace(page_info, r"\s+", " ") as page_info,
+    from
+        processed
+),
+
+replace_dash as (
+    select
+        program_url,
+        year,
+        country,
+        program,
+        regexp_replace(contents, r"\p{Dash}", "-") as contents,
+        regexp_replace(page_info, r"\p{Dash}", "-") as page_info,
+    from
+        replace_blank
+),
+
+
+final as (
+    select
+        program_url,
+        year,
+        country,
+        program,
+        parse_json(contents) as contents,
+        parse_json(page_info) as page_info,
+    from
+        replace_dash
 )
 
 select *, from final

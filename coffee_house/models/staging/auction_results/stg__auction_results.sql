@@ -29,8 +29,8 @@ auciton_results_processed as (
         program,
         award_category,
         score,
-        NORMALIZE_AND_CASEFOLD(farm_cws, NFKC) as farm_cws,
-        NORMALIZE_AND_CASEFOLD(farmer, NFKC) as farmer,
+        regexp_replace(NORMALIZE_AND_CASEFOLD(farm_cws, NFKC), r"{.+}|\(?\d{4}\)?", "") as farm_cws,
+        regexp_replace(NORMALIZE_AND_CASEFOLD(farmer, NFKC), r"{.+}|\(?\d{4}\)?", "") as farmer,
         lot_size,
         NORMALIZE_AND_CASEFOLD(high_bidder, NFKC) as high_bidder,
         NORMALIZE_AND_CASEFOLD(buyer_location, NFKC) as buyer_location,
@@ -53,19 +53,19 @@ auciton_results_processed as (
             as rank_cd,
         regexp_replace(weight, r'lbs', '') as weight,
         if(
-            regexp_contains(total_value, r'^–?$'),
+            regexp_contains(total_value, r'^-?$'),
             null,
-            regexp_replace(total_value, r'\$\.?|\s+|/lb', '')
+            regexp_replace(total_value, r'\$\.?|\s+|(/)?lb', '')
         ) as total_value,
         if(
-            regexp_contains(high_bid, r'^–?$'),
+            regexp_contains(high_bid, r'^-?$'),
             null,
-            regexp_replace(high_bid, r'\$\.?|\s+|/lb', '')
+            regexp_replace(high_bid, r'\$\.?|\s+|(/)?lb', '')
         ) as high_bid,
         if(
-            regexp_contains(commission, r'^–?$'),
+            regexp_contains(commission, r'^-?$'),
             null,
-            regexp_replace(commission, r'\$\.?|\s+|/lb', '')
+            regexp_replace(commission, r'\$\.?|\s+|(/)?lb', '')
         ) as commission,
         coalesce(regexp_contains(lot_size, r'\(.+\)'), false) as have_partial,
     from auciton_results
@@ -94,12 +94,12 @@ final as (
         individual_result,
         parse_numeric(score) as score,
         case
-            when weight_unit = 'kg' then parse_numeric(weight) * 2.20462
-            else parse_numeric(weight)
+            when weight_unit = 'lb' then parse_numeric(weight)
+            else parse_numeric(weight) * 2.20462
         end as weight_lb,
         case
-            when weight_unit = 'lb' then parse_numeric(weight) * 0.453592
-            else parse_numeric(weight)
+            when weight_unit = 'kg' then parse_numeric(weight)
+            else parse_numeric(weight) * 0.453592
         end as weight_kg,
         parse_numeric(total_value) as total_value,
         parse_numeric(high_bid) as high_bid,
