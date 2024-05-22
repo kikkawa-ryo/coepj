@@ -1,22 +1,44 @@
 {% macro get_cup_of_excellence_columns() %}
     {{ return(
-        { "common":
-            [ "country", "year", "program", "award_category"]
+        {
+        "common": [
+            {"column": "offset", "target": [1,2,3]},
+            {"column": "country", "target": [1,2,3]},
+            {"column": "year", "target": [1,2,3]},
+            {"column": "program", "target": [1,2,3]},
+            {"column": "award_category", "target": [1,2,3]},
+
+            {"column": "rank", "target": [2,1,3]},
+            {"column": "rank_no", "target": [2,1,3]},
+            {"column": "rank_cd", "target": [2,1,3]},
+            {"column": "score", "target": [1,2]},
+
+            {"column": "is_cws", "target": [1]},
+            {"column": "farmer_type", "target": [1]},
+
+            {"column": "variety", "target": [1]},
+            {"column": "process", "target": [1]},
+            {"column": "region", "target": [1]},
+            {"column": "woreda", "target": [1]},
+            {"column": "zone", "target": [1]},
+
+            {"column": "commission", "target": [2,3]},
+            {"column": "high_bid", "target": [2,3]},
+            {"column": "total_value", "target": [2,3]},
+
+            {"column": "buyer_location", "target": [2]},
+
+            {"column": "size_type", "target": [1]},
+        ]
         ,
-         "competition":
-            [ "id_offset", "id_rank", "offset", "rank", "rank_no", "rank_cd", "score",
-                "farm_cws", "farmer", "variety", "process", "region", "woreda", "zone", "lot_size", "weight_lb", "weight_kg",
-                "is_cws", "farmer_type", "size_type", "have_partial", "span"]
+        "competition":
+            [ "farm_cws", "farmer", "have_partial", "span"]
         ,
-         "auction":
-            [ "id_offset", "id_rank", "offset", "rank", "rank_no", "rank_cd", "score",
-                "farm_cws", "farmer", "lot_size", "weight_lb", "weight_kg", "total_value", "high_bid", "commission", "high_bidder", "buyer_location",
-                "have_partial", "span"]
+        "auction":
+            [ "farm_cws", "farmer", "high_bidder", "have_partial", "span"]
         ,
-         "commissions":
-            [ "id_offset", "id_rank", "offset", "rank", "rank_no", "rank_cd",
-                "farm_cws", "farmer", "lot_size", "weight_lb", "weight_kg", "total_value", "high_bid", "commission", "high_bidder",
-                "span"]
+        "commissions":
+            [ "farm_cws", "farmer", "high_bidder", "span"]
         }
         )
     }}

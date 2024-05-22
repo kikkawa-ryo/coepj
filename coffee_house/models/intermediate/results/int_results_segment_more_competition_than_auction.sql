@@ -14,17 +14,27 @@ target_segmentation as (
 
 more_competition_than_auction as (
     select
-        {# 5 flg, #}
+        stg__competition_results.id_offset as id_offset,
         {%- set columns_info = get_cup_of_excellence_columns() -%}
         {# common #}
-        {% for column in columns_info.common %}
+        {% for column_dict in columns_info.common %}
         case
-            when stg__competition_results.{{ column }} is not null
-                then stg__competition_results.{{ column }}
-            when stg__auction_results.{{ column }} is not null
-                then stg__auction_results.{{ column }}
+            {% for target in column_dict.target %}
+            {%- if target == 1 %}
+            when stg__competition_results.{{ column_dict.column }} is not null
+                then stg__competition_results.{{ column_dict.column }}
+            {% endif -%}
+            {%- if target == 2 %}
+            when stg__auction_results.{{ column_dict.column }} is not null
+                then stg__auction_results.{{ column_dict.column }}
+            {% endif -%}
+            {%- if target == 3 %}
+            when stg__commissions.{{ column_dict.column }} is not null
+                then stg__commissions.{{ column_dict.column }}
+            {% endif -%}
+            {% endfor %}
             else null
-        end as {{ column }}
+        end as {{ column_dict.column }}
         {%- if not loop.last %},{% endif -%}
         {% endfor %},
         {# competition #}
@@ -42,6 +52,36 @@ more_competition_than_auction as (
         stg__commissions.{{ column }} as {{ column ~ "_commissions" }}
         {%- if not loop.last %},{% endif -%}
         {% endfor %},
+        case
+            when CEILING(stg__competition_results.weight_lb / stg__competition_results.weight_kg * 1000) / 1000 = 2.205
+                then stg__competition_results.weight_lb
+            when CEILING(stg__auction_results.weight_lb / stg__auction_results.weight_kg * 1000) / 1000 = 2.205
+                then stg__auction_results.weight_lb
+            when CEILING(stg__commissions.weight_lb / stg__commissions.weight_kg * 1000) / 1000 = 2.205
+                then stg__commissions.weight_lb
+            else null
+        end as weight_lb,
+        case
+            when CEILING(stg__competition_results.weight_lb / stg__competition_results.weight_kg * 1000) / 1000 = 2.205
+                then stg__competition_results.weight_kg
+            when CEILING(stg__auction_results.weight_lb / stg__auction_results.weight_kg * 1000) / 1000 = 2.205
+                then stg__auction_results.weight_kg
+            when CEILING(stg__commissions.weight_lb / stg__commissions.weight_kg * 1000) / 1000 = 2.205
+                then stg__commissions.weight_kg
+            else null
+        end as weight_kg,
+        case
+            {# 複数×have_partial #}
+            when (stg__competition_results.lot_size != stg__auction_results.lot_size or stg__auction_results.lot_size != stg__commissions.lot_size)
+                then (select cast(max(x) as int) from unnest(split(concat(IFNULL(stg__competition_results.lot_size,0), ",", IFNULL(stg__auction_results.lot_size,0), ",", IFNULL(stg__commissions.lot_size,0)), ",")) x)
+            when stg__competition_results.lot_size is not null
+                then stg__competition_results.lot_size
+            when stg__auction_results.lot_size is not null
+                then stg__auction_results.lot_size
+            when stg__commissions.lot_size is not null
+                then stg__commissions.lot_size
+            else null
+        end as lot_size,
         case
             when stg__competition_results.individual_result is not null
                 then stg__competition_results.individual_result
