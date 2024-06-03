@@ -6,11 +6,11 @@
 with
 
 base_coe__competition_results as (
-    select *, from {{ ref('base_coe__competition_results__json_to_table') }}
+    select *, from {{ ref('base_coe__competition_results__expand_columns') }}
 ),
 
 base_nw__competition_results as (
-    select *, from {{ ref('base_nw__competition_results__json_to_table') }}
+    select *, from {{ ref('base_nw__competition_results__expand_columns') }}
 ),
 
 competition_results as (

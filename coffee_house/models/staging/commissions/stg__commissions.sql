@@ -7,7 +7,7 @@
 with
 
 base__commissions as (
-    select *, from {{ ref('base_coe__commissions__json_to_table') }}
+    select *, from {{ ref('base_coe__commissions__expand_columns') }}
 ),
 
 commissions_processed as (

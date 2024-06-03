@@ -8,11 +8,11 @@
 with
 
 base_coe__auction_results as (
-    select *, from {{ ref('base_coe__auction_results__json_to_table') }}
+    select *, from {{ ref('base_coe__auction_results__expand_columns') }}
 ),
 
 base_nw__auction_results as (
-    select *, from {{ ref('base_nw__auction_results__json_to_table') }}
+    select *, from {{ ref('base_nw__auction_results__expand_columns') }}
 ),
 
 auciton_results as (
