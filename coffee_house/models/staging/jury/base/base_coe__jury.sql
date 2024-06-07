@@ -10,9 +10,9 @@ international_jury as (
         "international" as judge_stage,
         json_extract(contents, "$.International_Jury") as jury_array,
     from source
-)
+),
 
-, national_jury as (
+national_jury as (
     select
         program_url,
         year,
@@ -20,9 +20,9 @@ international_jury as (
         "national" as judge_stage,
         json_extract(contents, "$.National_Jury") as jury_array,
     from source
-)
+),
 
-, jury as (
+jury as (
     select *, from international_jury
     union all
     select *, from national_jury

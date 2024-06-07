@@ -5,11 +5,11 @@ source as (select *, from {{ ref('base_nw__competition_results') }}),
 flatten_table as (
     select
         offset,
+        country,
         year,
         program,
         award_category,
         nw_competition_result,
-        concat(program, '_', award_category, "_", offset) as id,
     from
         source,
         unnest(

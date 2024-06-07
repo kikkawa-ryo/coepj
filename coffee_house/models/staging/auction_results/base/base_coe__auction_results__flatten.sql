@@ -10,7 +10,6 @@ flatten_table as (
         program,
         award_category,
         coe_auciton_result,
-        concat(program, '_', award_category, "_", offset) as id,
     from
         source,
         unnest(json_query_array(coe_auction_results_array))

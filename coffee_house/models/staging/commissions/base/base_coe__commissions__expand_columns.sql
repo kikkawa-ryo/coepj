@@ -6,9 +6,8 @@ with
 
 flatten_table as (select *, from {{ ref('base_coe__commissions__flatten') }}),
 
-get_columns as (
+expanded_table as (
     select
-        id,
         offset,
         country,
         year,
@@ -28,11 +27,12 @@ get_columns as (
             end as {{ columns_dict.alias }}
             {%- if not loop.last %},{% endif -%}
         {% endfor %},
-        commissions.span,
-        commissions.url,
+        if(commissions.weight_kg_ is not null, "kg", "lb")as weight_unit,
+        json_extract_scalar(commissions, "$.span") as span,
+        json_extract_scalar(commissions, "$.url") as url,
         commissions.individual_result,
     from flatten_table
 )
 
 select *,
-from get_columns
+from expanded_table

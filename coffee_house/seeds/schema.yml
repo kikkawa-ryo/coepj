@@ -1,7 +1,7 @@
 version: 2
 
 seeds:
-  - name: seed_coe__competition_results__fixed_data
+  - name: seed__coe_competition_results__fixed_data
     config:
       column_types:
         is_fixed: INTEGER
@@ -11,3 +11,13 @@ seeds:
         award_category: STRING
         url: STRING
         coe_competition_result: JSON
+  - name: seed__nw_auction_results__fixed_data
+    config:
+      column_types:
+        is_fixed: INTEGER
+        OFFSET: INTEGER
+        year: INTEGER
+        program: STRING
+        award_category: STRING
+        url: STRING
+        nw_auciton_result: JSON
