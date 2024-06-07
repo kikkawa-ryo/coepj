@@ -51,11 +51,12 @@ target_segmentation as (
         competition_results_cnt.*,
         auction_results_cnt.* except (program, award_category),
         CASE
-            WHEN competition_offset_cnt = auction_offset_cnt and auction_rank_cnt = 0 THEN 1
-            WHEN competition_offset_cnt = auction_offset_cnt THEN 2
-            WHEN competition_offset_cnt < auction_offset_cnt THEN 3
-            WHEN competition_offset_cnt > auction_offset_cnt and auction_rank_cnt = 0 THEN 4
-            WHEN competition_offset_cnt > auction_offset_cnt THEN 5
+            WHEN auction_offset_cnt is null THEN 1
+            WHEN competition_offset_cnt = auction_offset_cnt and auction_rank_cnt = 0 THEN 2
+            WHEN competition_offset_cnt = auction_offset_cnt THEN 3
+            WHEN competition_offset_cnt < auction_offset_cnt THEN 4
+            WHEN competition_offset_cnt > auction_offset_cnt and auction_rank_cnt = 0 THEN 5
+            WHEN competition_offset_cnt > auction_offset_cnt THEN 6
             ELSE 0
         END AS flg,
     from
