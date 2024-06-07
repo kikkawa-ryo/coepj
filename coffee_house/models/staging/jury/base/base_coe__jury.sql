@@ -4,7 +4,7 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 international_jury as (
     select
-        program_url,
+        country,
         year,
         program,
         "international" as judge_stage,
@@ -14,7 +14,7 @@ international_jury as (
 
 national_jury as (
     select
-        program_url,
+        country,
         year,
         program,
         "national" as judge_stage,

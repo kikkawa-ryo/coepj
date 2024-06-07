@@ -1,10 +1,11 @@
 with
 
-base_table as (select *, from {{ ref('base_coe__jury__get_columns') }}),
+base_table as (select *, from {{ ref('base_coe__jury__expand_columns') }}),
 
 final as (
     select
-        program_url,
+        offset,
+        country,
         year,
         program,
         judge_stage,

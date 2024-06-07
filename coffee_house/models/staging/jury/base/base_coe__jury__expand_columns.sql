@@ -8,7 +8,8 @@ flatten_table as (select *, from {{ ref('base_coe__jury__flatten') }}),
 
 normal_table as (
     select
-        program_url,
+        offset,
+        country,
         year,
         program,
         judge_stage,
@@ -50,14 +51,15 @@ normal_table as (
         flatten_table
     where
         not (
-            regexp_contains(program_url, "/guatemala-2020/")
+            program = "guatemala-2020"
             and judge_stage = "national"
         )
 ),
 
 fixed_table as (
     select
-        program_url,
+        offset,
+        country,
         year,
         program,
         judge_stage,
@@ -92,7 +94,7 @@ fixed_table as (
             flatten_table
         where
             (
-                regexp_contains(program_url, "guatemala-2020/")
+                program = "guatemala-2020"
                 and judge_stage = "national"
                 and offset != 0
             )
