@@ -4,9 +4,10 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 coe_auciton_results as (
     select
+        program_key,
+        program_id,
         country,
         year,
-        program_key,
         "coe" as award_category,
         case
             {% set columns = ["COE_Auction_Results", "Coe_Auction_Results"] %}

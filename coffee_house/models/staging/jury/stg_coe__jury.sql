@@ -4,10 +4,11 @@ base_table as (select *, from {{ ref('base_coe__jury__expand_columns') }}),
 
 final as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         judge_stage,
         jury_name,
         jury_organization,

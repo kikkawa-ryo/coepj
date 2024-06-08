@@ -4,9 +4,9 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 renamed as (
     select
-        program_url,
-        year,
         program_key,
+        program_id,
+        year,
         page_info.remarks,
         page_info.individual_flag,
         page_info.individual_unique_links,

@@ -20,7 +20,7 @@ stg__commissions as (select *, from {{ ref('stg__commissions') }}),
 
 more_auction_than_competition as (
     select
-        stg__auction_results.id_offset as result_key,
+        stg__auction_results.id_offset as result_id,
         {%- set columns_info = get_cup_of_excellence_columns() -%}
         {# common #}
         {% for column_dict in columns_info.common %}

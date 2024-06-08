@@ -1,7 +1,7 @@
 {{
     config(
         materialized = "table",
-        post_hook = 'delete from {{this}} where program_key in ("nicaragua-2002", "bolivia-2004")'
+        post_hook = 'delete from {{this}} where program_id in ("nicaragua-2002", "bolivia-2004")'
     )
 }}
 with
@@ -12,10 +12,11 @@ base__commissions as (
 
 commissions_processed as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         award_category,
         regexp_replace(NORMALIZE_AND_CASEFOLD(farm_cws, NFKC), r"{.+}|\(?\d{4}\)?", "") as farm_cws,
         regexp_replace(NORMALIZE_AND_CASEFOLD(farmer, NFKC), r"{.+}|\(?\d{4}\)?", "") as farmer,
@@ -25,9 +26,9 @@ commissions_processed as (
         span,
         url,
         individual_result,
-        concat(program_key, '_', award_category, '_', offset) as id_offset,
+        concat(program_id, '_', award_category, '_', offset) as id_offset,
         concat(
-            program_key,
+            program_id,
             '_',
             award_category,
             '_',
@@ -60,12 +61,13 @@ commissions_processed as (
 
 final as (
     select
+        program_key,
+        program_id,
         id_offset,
         id_rank,
         offset,
         country,
         year,
-        program_key,
         award_category,
         rank,
         cast(rank_no as INT64) as rank_no,

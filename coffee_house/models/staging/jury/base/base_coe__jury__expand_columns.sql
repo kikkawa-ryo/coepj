@@ -8,10 +8,11 @@ flatten_table as (select *, from {{ ref('base_coe__jury__flatten') }}),
 
 normal_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         judge_stage,
         {%- set columns_info = get_jury_columns() %}
         {%- for columns_dict in columns_info %}
@@ -51,17 +52,18 @@ normal_table as (
         flatten_table
     where
         not (
-            program_key = "guatemala-2020"
+            program_id = "guatemala-2020"
             and judge_stage = "national"
         )
 ),
 
 fixed_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         judge_stage,
         json_extract_scalar(jury, "$.Pre_Selection") as jury_name,
         json_extract_scalar(jury, "$.organization") as jury_organization,
@@ -94,7 +96,7 @@ fixed_table as (
             flatten_table
         where
             (
-                program_key = "guatemala-2020"
+                program_id = "guatemala-2020"
                 and judge_stage = "national"
                 and offset != 0
             )

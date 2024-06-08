@@ -8,7 +8,7 @@ flatten_table as (
         offset,
         country,
         year,
-        program_key,
+        program_id,
         award_category,
         coe_competition_result,
     from
@@ -30,19 +30,17 @@ concat_table as (
 
 filtered_table as (
     select
+        FARM_FINGERPRINT(program_id) as program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         award_category,
         coe_competition_result,
     from concat_table
     -- 修正前データを削除
     qualify
-        rank() over (partition by offset, program_key order by is_fixed desc) = 1
-    order by
-        program_key,
-        offset
+        rank() over (partition by offset, program_id order by is_fixed desc) = 1
 )
 
 select *,

@@ -3,6 +3,7 @@
         {
         "common": [
             {"column": "program_key", "target_and_priority": [1,2,3]},
+            {"column": "program_id", "target_and_priority": [1,2,3]},
             {"column": "offset", "target_and_priority": [1,2,3]},
             {"column": "country", "target_and_priority": [1,2,3]},
             {"column": "year", "target_and_priority": [1,2,3]},

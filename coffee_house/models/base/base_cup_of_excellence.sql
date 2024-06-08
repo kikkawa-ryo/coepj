@@ -16,7 +16,6 @@ deduplicated as (
 
 processed as (
     select
-        url as program_url,
         cast(regexp_extract(url, r"https://.+?/.*(\d{4}).*/") as int) as year,
         case
             when regexp_contains(url, "costa-rica") then "costa-rica"
@@ -31,7 +30,7 @@ processed as (
                 regexp_contains(url, "/brazil-naturals-2015/")
                 then "brazil-naturals-december-2015"
             else regexp_extract(url, r"https://.+?/(.+)/")
-        end as program_key,
+        end as program_id,
         normalize(to_json_string(contents), nfkc) as contents,
         normalize(to_json_string(page_info), nfkc) as page_info,
     from
@@ -40,10 +39,9 @@ processed as (
 
 replace_blank as (
     select
-        program_url,
         year,
         country,
-        program_key,
+        program_id,
         regexp_replace(contents, r"\s+", " ") as contents,
         regexp_replace(page_info, r"\s+", " ") as page_info,
     from
@@ -52,10 +50,9 @@ replace_blank as (
 
 replace_dash as (
     select
-        program_url,
         year,
         country,
-        program_key,
+        program_id,
         regexp_replace(contents, r"\p{Dash}", "-") as contents,
         regexp_replace(page_info, r"\p{Dash}", "-") as page_info,
     from
@@ -65,10 +62,10 @@ replace_dash as (
 
 final as (
     select
-        program_url,
+        FARM_FINGERPRINT(program_id) as program_key,
+        program_id,
         year,
         country,
-        program_key,
         parse_json(contents) as contents,
         parse_json(page_info) as page_info,
     from

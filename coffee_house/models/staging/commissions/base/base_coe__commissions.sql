@@ -4,9 +4,10 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 commissions as (
     select
+        program_key,
+        program_id,
         country,
         year,
-        program_key,
         "coe" as award_category,
         case
             {% set columns = ["Auction_Commissions", "Organizing_Country_Commissions"] %}

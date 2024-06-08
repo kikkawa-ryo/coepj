@@ -4,10 +4,11 @@ source as (select *, from {{ ref('base_coe__commissions') }}),
 
 flatten_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program_key,
         award_category,
         commissions,
     from
