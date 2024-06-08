@@ -6,7 +6,7 @@ nw_competition_results as (
     select
         country,
         year,
-        program,
+        program_key,
         "nw" as award_category,
         case
             {% set columns = ["NW_Competition_Results", "Nw_Competition_Results", "National_Winners", "National_Winners_"] %}

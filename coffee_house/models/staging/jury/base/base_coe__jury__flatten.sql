@@ -7,7 +7,7 @@ flatten_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         judge_stage,
         jury,
     from

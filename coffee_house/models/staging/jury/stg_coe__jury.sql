@@ -7,7 +7,7 @@ final as (
         offset,
         country,
         year,
-        program,
+        program_key,
         judge_stage,
         jury_name,
         jury_organization,

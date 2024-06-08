@@ -8,7 +8,7 @@ flatten_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         nw_auciton_result,
     from
@@ -32,15 +32,15 @@ filtered_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         nw_auciton_result,
     from concat_table
     -- 修正前データを削除
     qualify
-        rank() over (partition by offset, program order by is_fixed desc) = 1
+        rank() over (partition by offset, program_key order by is_fixed desc) = 1
     order by
-        program,
+        program_key,
         offset
 )
 

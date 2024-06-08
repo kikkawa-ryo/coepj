@@ -1,7 +1,7 @@
 {{
     config(
         materialized = "table",
-        post_hook = 'delete from {{this}} where program in ("nicaragua-2002")'
+        post_hook = 'delete from {{this}} where program_key in ("nicaragua-2002")'
     )
 }}
 
@@ -26,7 +26,7 @@ auciton_results_processed as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         score,
         regexp_replace(NORMALIZE_AND_CASEFOLD(farm_cws, NFKC), r"{.+}|\(?\d{4}\)?", "") as farm_cws,
@@ -38,9 +38,9 @@ auciton_results_processed as (
         span,
         url,
         individual_result,
-        concat(program, '_', award_category, '_', offset) as id_offset,
+        concat(program_key, '_', award_category, '_', offset) as id_offset,
         concat(
-            program,
+            program_key,
             '_',
             award_category,
             '_',
@@ -78,7 +78,7 @@ final as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         rank,
         cast(rank_no as INT64) as rank_no,

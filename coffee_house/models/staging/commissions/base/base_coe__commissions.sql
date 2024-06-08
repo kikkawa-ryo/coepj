@@ -6,7 +6,7 @@ commissions as (
     select
         country,
         year,
-        program,
+        program_key,
         "coe" as award_category,
         case
             {% set columns = ["Auction_Commissions", "Organizing_Country_Commissions"] %}

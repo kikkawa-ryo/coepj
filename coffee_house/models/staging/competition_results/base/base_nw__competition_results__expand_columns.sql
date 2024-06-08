@@ -9,7 +9,7 @@ get_columns as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         {%- set columns_info = get_competition_results_columns() -%}
         {% for columns_dict in columns_info.nw %}

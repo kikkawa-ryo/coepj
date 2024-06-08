@@ -7,7 +7,7 @@ flatten_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         award_category,
         nw_competition_result,
     from

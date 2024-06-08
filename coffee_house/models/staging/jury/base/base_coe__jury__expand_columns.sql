@@ -11,7 +11,7 @@ normal_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         judge_stage,
         {%- set columns_info = get_jury_columns() %}
         {%- for columns_dict in columns_info %}
@@ -51,7 +51,7 @@ normal_table as (
         flatten_table
     where
         not (
-            program = "guatemala-2020"
+            program_key = "guatemala-2020"
             and judge_stage = "national"
         )
 ),
@@ -61,7 +61,7 @@ fixed_table as (
         offset,
         country,
         year,
-        program,
+        program_key,
         judge_stage,
         json_extract_scalar(jury, "$.Pre_Selection") as jury_name,
         json_extract_scalar(jury, "$.organization") as jury_organization,
@@ -94,7 +94,7 @@ fixed_table as (
             flatten_table
         where
             (
-                program = "guatemala-2020"
+                program_key = "guatemala-2020"
                 and judge_stage = "national"
                 and offset != 0
             )

@@ -31,7 +31,7 @@ processed as (
                 regexp_contains(url, "/brazil-naturals-2015/")
                 then "brazil-naturals-december-2015"
             else regexp_extract(url, r"https://.+?/(.+)/")
-        end as program,
+        end as program_key,
         normalize(to_json_string(contents), nfkc) as contents,
         normalize(to_json_string(page_info), nfkc) as page_info,
     from
@@ -43,7 +43,7 @@ replace_blank as (
         program_url,
         year,
         country,
-        program,
+        program_key,
         regexp_replace(contents, r"\s+", " ") as contents,
         regexp_replace(page_info, r"\s+", " ") as page_info,
     from
@@ -55,7 +55,7 @@ replace_dash as (
         program_url,
         year,
         country,
-        program,
+        program_key,
         regexp_replace(contents, r"\p{Dash}", "-") as contents,
         regexp_replace(page_info, r"\p{Dash}", "-") as page_info,
     from
@@ -68,7 +68,7 @@ final as (
         program_url,
         year,
         country,
-        program,
+        program_key,
         parse_json(contents) as contents,
         parse_json(page_info) as page_info,
     from

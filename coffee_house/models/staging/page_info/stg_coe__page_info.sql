@@ -6,8 +6,7 @@ renamed as (
     select
         program_url,
         year,
-        program,
-        page_info.program as prg,
+        program_key,
         page_info.remarks,
         page_info.individual_flag,
         page_info.individual_unique_links,
