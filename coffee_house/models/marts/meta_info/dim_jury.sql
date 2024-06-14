@@ -1,7 +1,8 @@
 with
 judge as (
     select
-        program,
+        jury_key,
+        program_key,
         judge_stage,
         jury_name,
         jury_organization,
