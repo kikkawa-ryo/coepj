@@ -21,10 +21,11 @@ competition_results as (
 
 competition_results_processed as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         score,
         regexp_replace(NORMALIZE_AND_CASEFOLD(farm_cws, NFKC), r"{.+}|\(?\d{4}\)?", "") as farm_cws,
@@ -41,9 +42,9 @@ competition_results_processed as (
         span,
         url,
         individual_result,
-        concat(program, '_', award_category, '_', offset) as id_offset,
+        concat(program_id, '_', award_category, '_', offset) as id_offset,
         concat(
-            program,
+            program_id,
             '_',
             award_category,
             '_',
@@ -102,12 +103,13 @@ competition_results_processed as (
 
 final as (
     select
+        program_key,
+        program_id,
         id_offset,
         id_rank,
         offset,
         country,
         year,
-        program,
         award_category,
         rank,
         cast(rank_no as INT64) as rank_no,

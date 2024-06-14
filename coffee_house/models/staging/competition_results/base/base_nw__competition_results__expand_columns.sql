@@ -6,10 +6,11 @@ flatten_table as (
 
 get_columns as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         {%- set columns_info = get_competition_results_columns() -%}
         {% for columns_dict in columns_info.nw %}
@@ -82,13 +83,6 @@ get_columns as (
             else null
         end as weight_unit,
     from flatten_table
-),
-
-final as (
-    select
-    *
-    from
-    get_columns
 )
 
 select *,

@@ -4,11 +4,12 @@ source as (select *, from {{ ref('base_nw__auction_results') }}),
 
 flatten_table as (
     select
+        -- カラムの順序が重要
         0 as is_fixed,
         offset,
         country,
         year,
-        program,
+        program_id,
         award_category,
         nw_auciton_result,
     from
@@ -29,19 +30,17 @@ concat_table as (
 
 filtered_table as (
     select
+        FARM_FINGERPRINT(program_id) as program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         nw_auciton_result,
     from concat_table
     -- 修正前データを削除
     qualify
-        rank() over (partition by offset, program order by is_fixed desc) = 1
-    order by
-        program,
-        offset
+        rank() over (partition by offset, program_id order by is_fixed desc) = 1
 )
 
 select *,

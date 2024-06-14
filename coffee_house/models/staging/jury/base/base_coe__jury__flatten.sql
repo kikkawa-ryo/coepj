@@ -4,10 +4,11 @@ source as (select *, from {{ ref('base_coe__jury') }}),
 
 flatten_table as (
     select
+        program_key,
+        program_id,
         offset,
-        program_url,
+        country,
         year,
-        program,
         judge_stage,
         jury,
     from

@@ -4,7 +4,7 @@ with test_target as (
         id_rank_auction,
         farm_cws_competition,
         farm_cws_auction,
-    from {{ ref('int_results_joined')}}
+    from {{ ref('int_results_union_all_segments')}}
     WHERE
         id_rank_competition != id_rank_auction
 ),

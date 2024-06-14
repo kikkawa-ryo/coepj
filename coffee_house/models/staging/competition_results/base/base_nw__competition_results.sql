@@ -4,9 +4,10 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 nw_competition_results as (
     select
+        program_key,
+        program_id,
         country,
         year,
-        program,
         "nw" as award_category,
         case
             {% set columns = ["NW_Competition_Results", "Nw_Competition_Results", "National_Winners", "National_Winners_"] %}

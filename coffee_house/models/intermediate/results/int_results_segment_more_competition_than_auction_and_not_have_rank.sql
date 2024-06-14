@@ -1,34 +1,39 @@
 with
 
 stg__competition_results as (
-    select *, from {{ ref('stg__competition_results') }}
+    select *, from {{ ref('stg__competition_results') }} t
+    where
+        concat(
+            t.program_key,
+            t.award_category
+        ) in (
+            select concat(s.program_key, s.award_category),
+            from {{ ref('int_results_segmenting_for_join') }} s
+            where flg = 5
+        )
 ),
 
 stg__auction_results as (select *, from {{ ref('stg__auction_results') }}),
 
 stg__commissions as (select *, from {{ ref('stg__commissions') }}),
 
-target_segmentation as (
-    select * from {{ ref('int_results_segmenting_for_join') }}
-),
-
 more_competition_than_auction_and_not_have_rank as (
     select
-        stg__competition_results.id_offset as id_offset,
+        stg__competition_results.id_offset as result_id,
         {%- set columns_info = get_cup_of_excellence_columns() -%}
         {# common #}
         {% for column_dict in columns_info.common %}
         case
-            {% for target in column_dict.target %}
-            {%- if target == 1 %}
+            {% for target_and_priority in column_dict.target_and_priority %}
+            {%- if target_and_priority == 1 %}
             when stg__competition_results.{{ column_dict.column }} is not null
                 then stg__competition_results.{{ column_dict.column }}
             {% endif -%}
-            {%- if target == 2 %}
+            {%- if target_and_priority == 2 %}
             when stg__auction_results.{{ column_dict.column }} is not null
                 then stg__auction_results.{{ column_dict.column }}
             {% endif -%}
-            {%- if target == 3 %}
+            {%- if target_and_priority == 3 %}
             when stg__commissions.{{ column_dict.column }} is not null
                 then stg__commissions.{{ column_dict.column }}
             {% endif -%}
@@ -104,21 +109,12 @@ more_competition_than_auction_and_not_have_rank as (
         stg__competition_results
     left join stg__auction_results
         on
-            stg__competition_results.program = stg__auction_results.program
+            stg__competition_results.program_key = stg__auction_results.program_key
             and stg__competition_results.award_category
             = stg__auction_results.award_category
             and stg__competition_results.score = stg__auction_results.score
     left join stg__commissions
         on stg__auction_results.id_offset = stg__commissions.id_offset
-    where
-        concat(
-            stg__competition_results.program,
-            stg__competition_results.award_category
-        ) in (
-            select concat(program, award_category),
-            from target_segmentation
-            where flg = 4
-        )
 )
 
 select *, from more_competition_than_auction_and_not_have_rank

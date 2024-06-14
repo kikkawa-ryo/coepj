@@ -8,10 +8,11 @@ flatten_table as (select *, from {{ ref('base_coe__commissions__flatten') }}),
 
 expanded_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         {%- set columns_info = get_commissions_columns() %}
         {%- for columns_dict in columns_info %}

@@ -4,10 +4,11 @@ source as (select *, from {{ ref('base_nw__competition_results') }}),
 
 flatten_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         nw_competition_result,
     from

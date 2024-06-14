@@ -4,9 +4,10 @@ source as (select *, from {{ ref('base_cup_of_excellence') }}),
 
 international_jury as (
     select
-        program_url,
+        program_key,
+        program_id,
+        country,
         year,
-        program,
         "international" as judge_stage,
         json_extract(contents, "$.International_Jury") as jury_array,
     from source
@@ -14,9 +15,10 @@ international_jury as (
 
 national_jury as (
     select
-        program_url,
+        program_key,
+        program_id,
+        country,
         year,
-        program,
         "national" as judge_stage,
         json_extract(contents, "$.National_Jury") as jury_array,
     from source

@@ -10,10 +10,11 @@ flatten_table as (
 
 expanded_table as (
     select
+        program_key,
+        program_id,
         offset,
         country,
         year,
-        program,
         award_category,
         {%- set columns_info = get_auction_results_columns() %}
         {%- for columns_dict in columns_info.nw %}
